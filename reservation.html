@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reservation — RAWSCENE STUDIO</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCdRQQWXRCsnFa0h3KzfxDPQ6EIXe0NO-8",
+    authDomain: "rawscene-studio.firebaseapp.com",
+    projectId: "rawscene-studio",
+    storageBucket: "rawscene-studio.firebasestorage.app",
+    messagingSenderId: "557905973399",
+    appId: "1:557905973399:web:c0b1f33c40267afffc19d2"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const TIMES = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'];
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const DOW = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const ADMIN_PW = 'rawscene2026';
+
+  let bookings = [];
+  let selDate = null, selTime = null;
+  let curYear = new Date().getFullYear(), curMonth = new Date().getMonth();
+  let adminLoggedIn = false, adminFilter = 'all';
+  const today = new Date();
+
+  function toDS(y,m,d){ return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+  function todayStr(){ return toDS(today.getFullYear(),today.getMonth(),today.getDate()); }
+  function endTime(t){ const [h]=t.split(':').map(Number); return `${String(h+1).padStart(2,'0')}:00`; }
+  function bookedOn(ds){ return bookings.filter(b=>b.date===ds&&b.status!=='cancelled').map(b=>b.time); }
+  function fmtDt(iso){ const d=new Date(iso); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+
+  let toastTimer;
+  function toast(msg,type='',dur=3500){
+    const el=document.getElementById('toast');
+    el.textContent=msg; el.className='toast show'+(type?' '+type:'');
+    clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.className='toast',dur);
+  }
+  function setLock(v){
+    document.getElementById('lock').classList.toggle('show',v);
+    const btn=document.getElementById('submitBtn');
+    if(btn){btn.disabled=v; document.getElementById('btnTxt').textContent=v?'처리 중...':'예약 신청하기';}
+  }
+
+  // ── Firestore 실시간 구독 ──
+  function startListening(){
+    const q = query(collection(db,'bookings'), orderBy('createdAt','desc'));
+    onSnapshot(q, (snap)=>{
+      bookings = snap.docs.map(d=>({id:d.id,...d.data()}));
+      renderCalendar();
+      if(selDate) renderSlots(selDate);
+      renderStatus();
+      if(adminLoggedIn) renderAdmin();
+    });
+  }
+
+  function renderCalendar(){
+    document.getElementById('calMonth').textContent=`${MONTHS[curMonth]} ${curYear}`;
+    const grid=document.getElementById('calGrid'); grid.innerHTML='';
+    DOW.forEach(d=>{const el=document.createElement('div');el.className='cal-dow';el.textContent=d;grid.appendChild(el);});
+    const firstDow=new Date(curYear,curMonth,1).getDay();
+    const dim=new Date(curYear,curMonth+1,0).getDate();
+    const todS=todayStr();
+    for(let i=0;i<firstDow;i++){const e=document.createElement('div');e.className='cal-day empty';grid.appendChild(e);}
+    for(let d=1;d<=dim;d++){
+      const ds=toDS(curYear,curMonth,d);
+      const isPast=ds<todS, taken=bookedOn(ds).length, isFull=taken>=TIMES.length, isPartial=taken>0&&!isFull;
+      const el=document.createElement('div'); el.textContent=d;
+      if(isPast) el.className='cal-day past';
+      else if(isFull) el.className='cal-day full';
+      else{ el.className='cal-day'+(isPartial?' partial':''); el.onclick=()=>pickDate(ds); }
+      if(ds===selDate) el.classList.add('selected');
+      if(ds===todS&&ds!==selDate) el.classList.add('today');
+      grid.appendChild(el);
+    }
+  }
+
+  window.changeMonth=function(dir){
+    curMonth+=dir; if(curMonth>11){curMonth=0;curYear++;} if(curMonth<0){curMonth=11;curYear--;}
+    renderCalendar();
+  };
+
+  function pickDate(ds){ selDate=ds; selTime=null; renderCalendar(); renderSlots(ds); updateSelInfo(); }
+
+  function renderSlots(ds){
+    document.getElementById('slotsWrap').style.display='block';
+    const[y,m,d]=ds.split('-');
+    document.getElementById('slotsDateTxt').textContent=`${y}년 ${parseInt(m)}월 ${parseInt(d)}일`;
+    const taken=bookedOn(ds); const grid=document.getElementById('slotsGrid'); grid.innerHTML='';
+    TIMES.forEach(t=>{
+      const btn=document.createElement('button');
+      const isTaken=taken.includes(t);
+      btn.className='slot'+(isTaken?' taken':'')+(t===selTime?' selected':'');
+      if(isTaken){ btn.innerHTML=`${t}<span class="sx">예약됨</span>`; btn.disabled=true; }
+      else{ btn.textContent=t; btn.onclick=()=>pickTime(t); }
+      grid.appendChild(btn);
+    });
+  }
+
+  function pickTime(t){ selTime=t; renderSlots(selDate); updateSelInfo(); }
+
+  function updateSelInfo(){
+    const el=document.getElementById('selInfo');
+    if(!selDate){el.textContent='날짜와 시간을 먼저 선택해 주세요.';el.className='sel-info empty';return;}
+    if(!selTime){const[y,m,d]=selDate.split('-');el.innerHTML=`<strong>날짜:</strong> ${y}년 ${parseInt(m)}월 ${parseInt(d)}일 선택됨 &nbsp;|&nbsp; 시간을 선택해 주세요.`;el.className='sel-info';return;}
+    const[y,m,d]=selDate.split('-');
+    el.innerHTML=`<strong>스튜디오:</strong> RAWSCENE STUDIO A &nbsp;|&nbsp; <strong>날짜:</strong> ${y}년 ${parseInt(m)}월 ${parseInt(d)}일 &nbsp;|&nbsp; <strong>시간:</strong> ${selTime} – ${endTime(selTime)}`;
+    el.className='sel-info';
+  }
+
+  window.submitReservation=async function(){
+    if(!selDate||!selTime){toast('날짜와 시간을 먼저 선택해 주세요.','err');return;}
+    const name=document.getElementById('fName').value.trim();
+    const phone=document.getElementById('fPhone').value.trim();
+    const type=document.getElementById('fType').value;
+    if(!name){toast('이름 / 업체명을 입력해 주세요.','err');return;}
+    if(!phone){toast('연락처를 입력해 주세요.','err');return;}
+    if(!type){toast('촬영 유형을 선택해 주세요.','err');return;}
+
+    // 중복 확인
+    const conflict=bookedOn(selDate).includes(selTime);
+    if(conflict){toast('이미 예약된 시간입니다. 다른 시간을 선택해 주세요.','err');return;}
+
+    setLock(true);
+    try{
+      await addDoc(collection(db,'bookings'),{
+        date:selDate, time:selTime, name, phone,
+        email:document.getElementById('fEmail').value.trim(),
+        type, people:document.getElementById('fPeople').value,
+        note:document.getElementById('fNote').value.trim(),
+        status:'pending', createdAt:new Date().toISOString()
+      });
+      selDate=null; selTime=null;
+      ['fName','fPhone','fEmail','fNote'].forEach(id=>document.getElementById(id).value='');
+      document.getElementById('fType').value='';
+      document.getElementById('slotsWrap').style.display='none';
+      updateSelInfo();
+      setLock(false);
+      toast('예약 신청이 완료되었습니다! 입금 확인 후 확정 연락드립니다.','ok',5000);
+    }catch(e){setLock(false);toast('오류가 발생했습니다. 다시 시도해 주세요.','err');}
+  };
+
+  function renderStatus(){
+    const grid=document.getElementById('bkGrid');
+    const active=bookings.filter(b=>b.status!=='cancelled');
+    if(!active.length){grid.innerHTML='<p class="no-bk">아직 예약 내역이 없습니다.</p>';return;}
+    const show=active.slice(0,9);
+    grid.innerHTML=show.map(b=>`
+      <div class="bk-card ${b.status}">
+        <p class="bk-date">${b.date}</p>
+        <p class="bk-time">${b.time} – ${endTime(b.time)}</p>
+        <p class="bk-name">${b.name}</p>
+        <div class="bk-tags">
+          <span class="bk-tag">${b.type||'촬영'}</span>
+          <span class="bk-tag ${b.status}">${b.status==='confirmed'?'확정':'대기중'}</span>
+        </div>
+      </div>`).join('');
+  }
+
+  // ── ADMIN ──
+  window.showPage=function(p){
+    document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+    document.querySelectorAll('.nav-links a').forEach(el=>el.classList.remove('active'));
+    document.getElementById('page-'+p).classList.add('active');
+    document.getElementById('nav-'+p).classList.add('active');
+  };
+
+  window.adminLogin=function(){
+    const pw=document.getElementById('adminPw').value;
+    if(pw===ADMIN_PW){
+      adminLoggedIn=true;
+      document.getElementById('loginBox').style.display='none';
+      document.getElementById('adminDash').style.display='block';
+      renderAdmin();
+    } else {
+      document.getElementById('loginErr').style.display='block';
+      document.getElementById('adminPw').value='';
+    }
+  };
+
+  window.adminLogout=function(){
+    adminLoggedIn=false;
+    document.getElementById('loginBox').style.display='block';
+    document.getElementById('adminDash').style.display='none';
+    document.getElementById('adminPw').value='';
+    document.getElementById('loginErr').style.display='none';
+  };
+
+  window.setFilter=function(f,btn){
+    adminFilter=f;
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    renderAdmin();
+  };
+
+  function renderAdmin(){
+    const total=bookings.length;
+    const pending=bookings.filter(b=>b.status==='pending').length;
+    const confirmed=bookings.filter(b=>b.status==='confirmed').length;
+    const cancelled=bookings.filter(b=>b.status==='cancelled').length;
+    document.getElementById('adminStats').innerHTML=`
+      <div class="stat-card"><p class="stat-num">${total}</p><p class="stat-lbl">전체</p></div>
+      <div class="stat-card"><p class="stat-num" style="color:#c8841a">${pending}</p><p class="stat-lbl">대기중</p></div>
+      <div class="stat-card"><p class="stat-num">${confirmed}</p><p class="stat-lbl">확정</p></div>
+      <div class="stat-card"><p class="stat-num" style="color:#bbb">${cancelled}</p><p class="stat-lbl">취소</p></div>`;
+    let filtered=adminFilter==='all'?[...bookings]:bookings.filter(b=>b.status===adminFilter);
+    filtered.sort((a,b)=>a.date>b.date?1:-1);
+    const tbody=document.getElementById('adminTbody');
+    const noAdm=document.getElementById('noAdmin');
+    if(!filtered.length){tbody.innerHTML='';noAdm.style.display='block';return;}
+    noAdm.style.display='none';
+    tbody.innerHTML=filtered.map(b=>`
+      <tr>
+        <td>${b.date}</td>
+        <td>${b.time} – ${endTime(b.time)}</td>
+        <td style="font-weight:500">${b.name}</td>
+        <td>${b.phone}</td>
+        <td>${b.type||'—'}</td>
+        <td>${b.people||'—'}</td>
+        <td><span class="status-badge ${b.status}">${b.status==='pending'?'대기중':b.status==='confirmed'?'확정':'취소'}</span></td>
+        <td style="color:#aaa;font-size:11px">${fmtDt(b.createdAt)}</td>
+        <td>
+          <div class="action-btns">
+            ${b.status!=='confirmed'?`<button class="act-btn confirm" onclick="changeStatus('${b.id}','confirmed')">확정</button>`:''}
+            ${b.status!=='cancelled'?`<button class="act-btn cancel" onclick="changeStatus('${b.id}','cancelled')">취소</button>`:''}
+            <button class="act-btn delete" onclick="deleteBooking('${b.id}')">삭제</button>
+          </div>
+        </td>
+      </tr>`).join('');
+  }
+
+  window.changeStatus=async function(id,newStatus){
+    try{
+      await updateDoc(doc(db,'bookings',id),{status:newStatus});
+      toast(newStatus==='confirmed'?'예약이 확정되었습니다.':'예약이 취소되었습니다.',newStatus==='confirmed'?'ok':'err',2500);
+    }catch(e){toast('오류가 발생했습니다.','err');}
+  };
+
+  window.deleteBooking=async function(id){
+    if(!confirm('이 예약을 완전히 삭제하시겠습니까?'))return;
+    try{
+      await deleteDoc(doc(db,'bookings',id));
+      toast('예약이 삭제되었습니다.');
+    }catch(e){toast('삭제 중 오류가 발생했습니다.','err');}
+  };
+
+  // 시작
+  window.addEventListener('DOMContentLoaded',()=>{
+    renderCalendar();
+    startListening();
+  });
+</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--black:#0a0a0a;--white:#fafaf8;--gray:#888;--border:#e0ddd8;}
+body{font-family:'Barlow',sans-serif;background:var(--white);color:var(--black);}
+
+nav{display:flex;justify-content:space-between;align-items:center;padding:18px 48px;border-bottom:0.5px solid var(--border);background:var(--white);}
+.logo{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:400;letter-spacing:0.18em;}
+.nav-links{display:flex;gap:32px;list-style:none;}
+.nav-links a{font-size:11px;letter-spacing:0.1em;color:var(--gray);text-decoration:none;text-transform:uppercase;cursor:pointer;}
+.nav-links a:hover,.nav-links a.active{color:var(--black);}
+.nav-links a.active{border-bottom:1px solid var(--black);padding-bottom:2px;}
+
+.page{display:none;}
+.page.active{display:block;}
+
+/* NOTICE */
+.notice-banner{background:#f7f6f2;border-bottom:0.5px solid #e8e4dc;padding:13px 48px;display:flex;gap:36px;flex-wrap:wrap;}
+.notice-item{display:flex;align-items:center;gap:8px;font-size:11px;color:#666;letter-spacing:0.03em;}
+.ndot{width:6px;height:6px;border-radius:50%;background:#e8a44a;flex-shrink:0;}
+.ndot.b{background:var(--black);}
+
+.page-hero{height:180px;background:linear-gradient(rgba(0,0,0,0.52),rgba(0,0,0,0.38)),url('https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=80') center/cover;display:flex;flex-direction:column;justify-content:flex-end;padding:28px 48px;}
+.page-hero p{font-size:10px;letter-spacing:0.2em;color:rgba(255,255,255,0.5);text-transform:uppercase;margin-bottom:6px;}
+.page-hero h1{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:#fff;letter-spacing:0.1em;}
+
+.main{display:grid;grid-template-columns:1fr 1fr;}
+
+/* CAL */
+.cal-panel{padding:36px 40px;border-right:0.5px solid var(--border);}
+.panel-label{font-size:10px;letter-spacing:0.18em;color:var(--gray);text-transform:uppercase;margin-bottom:4px;}
+.panel-title{font-size:16px;font-weight:400;letter-spacing:0.05em;margin-bottom:20px;}
+.cal-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.cal-nav button{background:none;border:0.5px solid var(--border);padding:5px 12px;font-size:11px;cursor:pointer;color:var(--gray);transition:all 0.15s;}
+.cal-nav button:hover{background:var(--black);color:#fff;border-color:var(--black);}
+.cal-month{font-size:13px;font-weight:500;letter-spacing:0.08em;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-dow{font-size:9px;letter-spacing:0.1em;color:#bbb;text-align:center;padding:4px 0;text-transform:uppercase;}
+.cal-day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;border:0.5px solid transparent;cursor:pointer;position:relative;transition:all 0.12s;user-select:none;}
+.cal-day:hover:not(.empty):not(.past):not(.full){border-color:var(--black);background:#f5f5f0;}
+.cal-day.empty,.cal-day.past{cursor:default;color:#ccc;}
+.cal-day.today{border-color:#aaa;}
+.cal-day.selected{background:var(--black)!important;color:#fff!important;border-color:var(--black)!important;}
+.cal-day.full{background:#f5f5f3;color:#bbb;cursor:not-allowed;}
+.cal-day.full::after{content:'';width:5px;height:5px;background:#bbb;border-radius:50%;position:absolute;bottom:3px;}
+.cal-day.partial{background:#fffaf3;}
+.cal-day.partial::after{content:'';width:5px;height:5px;background:#e8a44a;border-radius:50%;position:absolute;bottom:3px;}
+.legend{display:flex;gap:12px;margin-top:12px;}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--gray);}
+.leg-dot{width:7px;height:7px;border-radius:50%;}
+.slots-wrap{margin-top:20px;display:none;}
+.slots-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.slots-label{font-size:10px;letter-spacing:0.12em;color:var(--gray);text-transform:uppercase;}
+.slots-date{font-size:12px;font-weight:500;}
+.slots-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;}
+.slot{padding:8px 4px;font-size:11px;border:0.5px solid var(--border);background:#fff;cursor:pointer;color:#555;transition:all 0.12s;text-align:center;font-family:inherit;line-height:1.3;}
+.slot:hover:not(.taken){border-color:var(--black);color:var(--black);}
+.slot.selected{background:var(--black)!important;color:#fff!important;border-color:var(--black)!important;}
+.slot.taken{background:#f5f5f3;color:#ccc;cursor:not-allowed;}
+.slot.taken .sx{display:block;font-size:9px;color:#ccc;}
+
+/* FORM */
+.form-panel{padding:36px 40px;}
+.sel-info{border:0.5px solid var(--border);padding:12px 15px;margin-bottom:16px;font-size:12px;color:#555;line-height:1.85;background:#fafaf8;}
+.sel-info.empty{color:#bbb;font-style:italic;background:#fff;}
+.sel-info strong{color:var(--black);font-weight:500;}
+.fg{margin-bottom:14px;}
+.fl{font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--gray);margin-bottom:6px;display:block;}
+.fi,.fs,.ft{width:100%;padding:10px 12px;border:0.5px solid var(--border);background:#fff;font-size:13px;font-family:inherit;color:var(--black);outline:none;transition:border-color 0.15s;border-radius:0;-webkit-appearance:none;}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--black);}
+.ft{resize:vertical;min-height:64px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.submit-btn{width:100%;padding:14px;background:var(--black);color:#fff;border:none;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;cursor:pointer;font-family:inherit;transition:background 0.2s;display:flex;align-items:center;justify-content:center;}
+.submit-btn:hover:not(:disabled){background:#333;}
+.submit-btn:disabled{background:#bbb;cursor:not-allowed;}
+.form-notice{font-size:11px;color:var(--gray);line-height:1.85;margin-top:12px;}
+.form-notice strong{color:#555;font-weight:500;}
+
+/* STATUS */
+.status-section{padding:36px 48px;border-top:0.5px solid var(--border);}
+.status-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.status-header h2{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;letter-spacing:0.05em;}
+.refresh-btn{background:none;border:0.5px solid var(--border);padding:6px 14px;font-size:10px;letter-spacing:0.1em;cursor:pointer;color:var(--gray);text-transform:uppercase;}
+.bk-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.bk-card{border:0.5px solid #e8e8e5;padding:14px 15px;font-size:12px;border-left-width:2.5px;}
+.bk-card.confirmed{border-left-color:var(--black);}
+.bk-card.pending{border-left-color:#e8a44a;}
+.bk-date{font-size:10px;letter-spacing:0.1em;color:var(--gray);margin-bottom:4px;text-transform:uppercase;}
+.bk-time{font-size:13px;font-weight:500;margin-bottom:3px;}
+.bk-name{font-size:12px;color:#666;margin-bottom:8px;}
+.bk-tags{display:flex;gap:5px;flex-wrap:wrap;}
+.bk-tag{font-size:9px;letter-spacing:0.07em;border:0.5px solid var(--border);padding:2px 7px;color:var(--gray);text-transform:uppercase;}
+.bk-tag.confirmed{border-color:var(--black);color:var(--black);}
+.bk-tag.pending{border-color:#e8a44a;color:#c8841a;}
+.no-bk{font-size:13px;color:#bbb;text-align:center;padding:36px;grid-column:1/-1;}
+
+/* ADMIN */
+.admin-page{padding:40px 48px;}
+.admin-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;flex-wrap:wrap;gap:12px;}
+.admin-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:400;letter-spacing:0.06em;margin-bottom:4px;}
+.admin-sub{font-size:12px;color:var(--gray);}
+.login-box{max-width:360px;margin:80px auto;border:0.5px solid var(--border);padding:40px;}
+.login-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:400;letter-spacing:0.1em;margin-bottom:24px;text-align:center;}
+.login-err{font-size:11px;color:#c0392b;margin-top:8px;display:none;}
+.login-btn{width:100%;padding:12px;background:var(--black);color:#fff;border:none;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;font-family:inherit;margin-top:16px;}
+.admin-filters{display:flex;gap:8px;margin-bottom:20px;}
+.filter-btn{padding:7px 16px;border:0.5px solid var(--border);background:#fff;font-size:11px;letter-spacing:0.08em;cursor:pointer;color:var(--gray);text-transform:uppercase;font-family:inherit;}
+.filter-btn.on{background:var(--black);color:#fff;border-color:var(--black);}
+.admin-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px;}
+.stat-card{padding:16px;background:#f7f6f2;border:0.5px solid #f0ede5;}
+.stat-num{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:400;margin-bottom:3px;}
+.stat-lbl{font-size:10px;letter-spacing:0.1em;color:var(--gray);text-transform:uppercase;}
+.admin-table-wrap{overflow-x:auto;}
+.admin-table{width:100%;border-collapse:collapse;font-size:12px;}
+.admin-table th{font-size:10px;letter-spacing:0.12em;color:var(--gray);text-transform:uppercase;padding:10px 14px;border-bottom:0.5px solid var(--border);text-align:left;font-weight:400;white-space:nowrap;}
+.admin-table td{padding:12px 14px;border-bottom:0.5px solid #f0f0ee;vertical-align:middle;}
+.admin-table tr:hover td{background:#fafaf8;}
+.status-badge{display:inline-block;font-size:9px;letter-spacing:0.08em;padding:3px 9px;border:0.5px solid;text-transform:uppercase;}
+.status-badge.pending{border-color:#e8a44a;color:#c8841a;background:#fffaf3;}
+.status-badge.confirmed{border-color:var(--black);color:var(--black);background:#f5f5f3;}
+.status-badge.cancelled{border-color:#ccc;color:#bbb;background:#fafafa;}
+.action-btns{display:flex;gap:6px;}
+.act-btn{padding:5px 12px;font-size:10px;letter-spacing:0.08em;border:0.5px solid;cursor:pointer;text-transform:uppercase;font-family:inherit;transition:all 0.15s;white-space:nowrap;}
+.act-btn.confirm{border-color:var(--black);color:var(--black);background:#fff;}
+.act-btn.confirm:hover{background:var(--black);color:#fff;}
+.act-btn.cancel{border-color:#ddd;color:#bbb;background:#fff;}
+.act-btn.cancel:hover{border-color:#c0392b;color:#c0392b;}
+.act-btn.delete{border-color:#eee;color:#ddd;background:#fff;}
+.act-btn.delete:hover{border-color:#c0392b;color:#c0392b;}
+.logout-btn{background:none;border:0.5px solid var(--border);padding:7px 16px;font-size:10px;letter-spacing:0.1em;cursor:pointer;color:var(--gray);text-transform:uppercase;}
+.no-admin{font-size:13px;color:#bbb;text-align:center;padding:40px;}
+
+/* TOAST, LOCK */
+.toast{position:fixed;bottom:20px;right:20px;z-index:9999;background:var(--black);color:#fff;padding:12px 20px;font-size:12px;letter-spacing:0.06em;max-width:300px;line-height:1.5;opacity:0;transition:opacity 0.25s;pointer-events:none;}
+.toast.show{opacity:1;}
+.toast.err{background:#c0392b;}
+.toast.ok{background:#1a7a4a;}
+.lock{position:fixed;inset:0;background:rgba(255,255,255,0.78);display:none;align-items:center;justify-content:center;z-index:500;flex-direction:column;gap:10px;font-size:11px;letter-spacing:0.12em;color:var(--gray);text-transform:uppercase;}
+.lock.show{display:flex;}
+.lock-sp{width:18px;height:18px;border:1.5px solid #ddd;border-top-color:var(--black);border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<div class="lock" id="lock"><div class="lock-sp"></div>처리 중...</div>
+<div class="toast" id="toast"></div>
+
+<nav>
+  <a href="index.html" class="logo">RAWSCENE STUDIO</a>
+  <ul class="nav-links">
+    <li><a href="index.html">Studio</a></li>
+    <li><a onclick="showPage('res')" id="nav-res" class="active" style="cursor:pointer">Reservation</a></li>
+    <li><a onclick="showPage('admin')" id="nav-admin" style="cursor:pointer">Admin</a></li>
+  </ul>
+</nav>
+
+<!-- ══ 예약 페이지 ══ -->
+<div class="page active" id="page-res">
+  <div class="notice-banner">
+    <div class="notice-item"><div class="ndot"></div>예약 신청 후 확정 전까지는 <strong style="color:var(--black);margin:0 3px">대기 상태</strong>로 표시됩니다.</div>
+    <div class="notice-item"><div class="ndot b"></div>입금 순서로 결정되며 입금 확인 시 예약이 확정됩니다.</div>
+  </div>
+  <div class="page-hero">
+    <p>Rawscene Studio · Namyangju</p>
+    <h1><strong>STUDIO A</strong> RESERVATION</h1>
+  </div>
+  <div class="main">
+    <div class="cal-panel">
+      <p class="panel-label">Step 1</p>
+      <h2 class="panel-title">날짜 & 시간 선택</h2>
+      <div class="cal-nav">
+        <button onclick="changeMonth(-1)">← Prev</button>
+        <span class="cal-month" id="calMonth"></span>
+        <button onclick="changeMonth(1)">Next →</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:var(--black)"></div>선택</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#e8a44a"></div>일부예약</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#bbb"></div>마감</div>
+      </div>
+      <div class="slots-wrap" id="slotsWrap">
+        <div class="slots-header">
+          <span class="slots-label">시간 선택</span>
+          <span class="slots-date" id="slotsDateTxt"></span>
+        </div>
+        <div class="slots-grid" id="slotsGrid"></div>
+      </div>
+    </div>
+    <div class="form-panel">
+      <p class="panel-label">Step 2</p>
+      <h2 class="panel-title">예약 정보 입력</h2>
+      <div class="sel-info empty" id="selInfo">날짜와 시간을 먼저 선택해 주세요.</div>
+      <div class="fg"><label class="fl">이름 / 업체명 *</label><input class="fi" id="fName" type="text" placeholder="홍길동 / OO스튜디오"></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">연락처 *</label><input class="fi" id="fPhone" type="tel" placeholder="010-0000-0000"></div>
+        <div class="fg"><label class="fl">이메일</label><input class="fi" id="fEmail" type="email" placeholder="email@example.com"></div>
+      </div>
+      <div class="fg">
+        <label class="fl">촬영 유형 *</label>
+        <select class="fs" id="fType">
+          <option value="">선택해주세요</option>
+          <option>룩북 / 패션</option><option>제품 촬영</option>
+          <option>인물 / 프로필</option><option>매거진 / 광고</option>
+          <option>영상 촬영</option><option>기타</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">인원 수</label>
+        <select class="fs" id="fPeople">
+          <option>1–2명</option><option>3–5명</option><option>6–10명</option><option>10명 이상</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">요청 사항</label><textarea class="ft" id="fNote" placeholder="특별한 요청이나 궁금한 점을 적어주세요."></textarea></div>
+      <button class="submit-btn" id="submitBtn" onclick="submitReservation()"><span id="btnTxt">예약 신청하기</span></button>
+      <p class="form-notice">
+        * <strong>예약 신청 후 확정 전까지는 대기 상태</strong>로 표시됩니다.<br>
+        * <strong>입금 순서로 결정되며 입금 확인 시 예약이 확정됩니다.</strong><br>
+        * 이미 예약된 시간은 선택이 불가합니다.<br>
+        * 문의: 010-5788-3190 · rawscene3190@gmail.com
+      </p>
+    </div>
+  </div>
+  <div class="status-section">
+    <div class="status-header">
+      <div><p class="panel-label">실시간 예약 현황</p><h2>Reservation Status</h2></div>
+    </div>
+    <div class="bk-grid" id="bkGrid"><p class="no-bk">불러오는 중...</p></div>
+  </div>
+</div>
+
+<!-- ══ 관리자 페이지 ══ -->
+<div class="page" id="page-admin">
+  <div id="loginBox" class="login-box">
+    <p class="login-title">ADMIN LOGIN</p>
+    <div class="fg"><label class="fl">비밀번호</label><input class="fi" id="adminPw" type="password" placeholder="관리자 비밀번호 입력" onkeydown="if(event.key==='Enter')adminLogin()"></div>
+    <p class="login-err" id="loginErr">비밀번호가 올바르지 않습니다.</p>
+    <button class="login-btn" onclick="adminLogin()">로그인</button>
+    <p style="font-size:11px;color:#bbb;margin-top:14px;text-align:center;">기본 비밀번호: rawscene2026</p>
+  </div>
+  <div id="adminDash" style="display:none;" class="admin-page">
+    <div class="admin-top">
+      <div><h2 class="admin-title">예약 관리</h2><p class="admin-sub">RAWSCENE STUDIO A · Firebase 실시간 연동</p></div>
+      <button class="logout-btn" onclick="adminLogout()">로그아웃</button>
+    </div>
+    <div class="admin-stats" id="adminStats"></div>
+    <div class="admin-filters">
+      <button class="filter-btn on" onclick="setFilter('all',this)">전체</button>
+      <button class="filter-btn" onclick="setFilter('pending',this)">대기중</button>
+      <button class="filter-btn" onclick="setFilter('confirmed',this)">확정</button>
+      <button class="filter-btn" onclick="setFilter('cancelled',this)">취소</button>
+    </div>
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead><tr><th>날짜</th><th>시간</th><th>이름/업체</th><th>연락처</th><th>촬영유형</th><th>인원</th><th>상태</th><th>신청일시</th><th>액션</th></tr></thead>
+        <tbody id="adminTbody"></tbody>
+      </table>
+    </div>
+    <p class="no-admin" id="noAdmin" style="display:none">해당 예약 내역이 없습니다.</p>
+  </div>
+</div>
+
+</body>
+</html>

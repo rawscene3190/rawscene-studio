@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAWSCENE STUDIO</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--black:#0a0a0a;--white:#fafaf8;--gray:#888;--border:#e0ddd8;}
+body{font-family:'Barlow',sans-serif;background:var(--white);color:var(--black);}
+a{text-decoration:none;color:inherit;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;justify-content:space-between;align-items:center;padding:20px 48px;background:rgba(250,250,248,0.95);border-bottom:0.5px solid var(--border);}
+.logo{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:400;letter-spacing:0.18em;}
+.nav-links{display:flex;gap:36px;list-style:none;}
+.nav-links a{font-size:11px;letter-spacing:0.12em;color:var(--gray);text-transform:uppercase;transition:color 0.2s;}
+.nav-links a:hover{color:var(--black);}
+.nav-cta{font-size:11px;letter-spacing:0.14em;text-transform:uppercase;border:0.5px solid var(--black);padding:9px 20px;transition:all 0.2s;}
+.nav-cta:hover{background:var(--black);color:var(--white);}
+
+/* HERO */
+.hero{height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding:60px 48px;background:#0a0a0a url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=80') center/cover no-repeat;position:relative;}
+.hero::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0.1) 60%);}
+.hero-content{position:relative;z-index:1;}
+.hero-tag{font-size:10px;letter-spacing:0.24em;color:rgba(255,255,255,0.55);text-transform:uppercase;margin-bottom:20px;}
+.hero-title{font-family:'Cormorant Garamond',serif;font-size:72px;font-weight:300;color:#fff;letter-spacing:0.06em;line-height:1.0;margin-bottom:28px;}
+.hero-desc{font-size:13px;color:rgba(255,255,255,0.65);letter-spacing:0.06em;line-height:1.85;max-width:420px;margin-bottom:36px;}
+.hero-btn{display:inline-block;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;background:#fff;color:#0a0a0a;padding:15px 36px;transition:all 0.2s;}
+.hero-btn:hover{background:transparent;color:#fff;border:0.5px solid #fff;}
+
+/* SECTIONS */
+section{padding:80px 48px;}
+.sec-label{font-size:10px;letter-spacing:0.22em;color:var(--gray);text-transform:uppercase;margin-bottom:8px;}
+.sec-title{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;letter-spacing:0.06em;margin-bottom:48px;}
+
+/* STUDIO CARD */
+.studio-grid{display:grid;grid-template-columns:1fr 1fr;border:0.5px solid var(--border);margin-bottom:16px;}
+.studio-img{height:380px;background:url('https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80') center/cover no-repeat;}
+.studio-body{padding:48px;display:flex;flex-direction:column;justify-content:space-between;}
+.studio-name{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:400;letter-spacing:0.08em;margin-bottom:12px;}
+.studio-addr{font-size:12px;color:var(--gray);line-height:1.9;letter-spacing:0.04em;margin-bottom:24px;}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:32px;}
+.tag{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;border:0.5px solid var(--border);padding:5px 12px;color:var(--gray);}
+.studio-link{font-size:11px;letter-spacing:0.14em;text-transform:uppercase;display:inline-flex;align-items:center;gap:10px;transition:gap 0.2s;}
+.studio-link:hover{gap:18px;}
+
+/* FEATURES */
+.features{background:#f4f3f0;}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin-top:48px;}
+.feat{padding:32px;background:#fff;border:0.5px solid var(--border);}
+.feat-icon{font-size:22px;margin-bottom:20px;color:var(--gray);}
+.feat-title{font-size:13px;font-weight:500;letter-spacing:0.08em;margin-bottom:10px;}
+.feat-desc{font-size:12px;color:var(--gray);line-height:1.85;}
+
+/* CTA */
+.cta{background:var(--black);color:#fff;text-align:center;}
+.cta .sec-label{color:rgba(255,255,255,0.4);}
+.cta .sec-title{color:#fff;font-size:40px;margin-bottom:14px;}
+.cta-sub{font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:40px;letter-spacing:0.04em;}
+.cta-btn{display:inline-block;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;border:0.5px solid rgba(255,255,255,0.4);padding:15px 44px;color:#fff;transition:all 0.2s;}
+.cta-btn:hover{background:#fff;color:var(--black);border-color:#fff;}
+.contact-row{display:flex;justify-content:center;gap:60px;margin-top:48px;}
+.contact-item{font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:0.08em;text-transform:uppercase;}
+.contact-item span{display:block;color:rgba(255,255,255,0.7);margin-top:6px;font-size:13px;text-transform:none;letter-spacing:0.04em;}
+
+/* FOOTER */
+footer{padding:28px 48px;border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.footer-logo{font-family:'Cormorant Garamond',serif;font-size:13px;letter-spacing:0.16em;}
+.footer-links{display:flex;gap:28px;}
+.footer-links a{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray);}
+.footer-links a:hover{color:var(--black);}
+.footer-copy{font-size:10px;color:#ccc;letter-spacing:0.04em;}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo">RAWSCENE STUDIO</a>
+  <ul class="nav-links">
+    <li><a href="index.html">Studio</a></li>
+    <li><a href="#">Info</a></li>
+    <li><a href="#">Archive</a></li>
+    <li><a href="#">Schedule</a></li>
+  </ul>
+  <a href="reservation.html" class="nav-cta">Reservation</a>
+</nav>
+
+<section class="hero">
+  <div class="hero-content">
+    <p class="hero-tag">Rental Studio · Namyangju, Gyeonggi</p>
+    <h1 class="hero-title">RAWSCENE<br>STUDIO</h1>
+    <p class="hero-desc">높은 층고와 자연광이 가득한 렌탈 스튜디오.<br>1층 위치로 야외 촬영까지 바로 연결됩니다.<br>신호등 등 다양한 야외 컨셉이 준비되어 있습니다.</p>
+    <a href="reservation.html" class="hero-btn">예약 문의하기 →</a>
+  </div>
+</section>
+
+<section>
+  <p class="sec-label">Our Space</p>
+  <h2 class="sec-title">Studio</h2>
+  <div class="studio-grid">
+    <div class="studio-img"></div>
+    <div class="studio-body">
+      <div>
+        <p class="studio-name">RAWSCENE A</p>
+        <p class="studio-addr">
+          경기도 남양주시 다산순환로 20<br>
+          현대프리미엄캠퍼스몰 D118<br><br>
+          Hyundai Premium Campus Mall D118,<br>
+          Dasan-sunhwan-ro 20, Namyangju-si
+        </p>
+        <div class="tags">
+          <span class="tag">높은 층고</span>
+          <span class="tag">자연광</span>
+          <span class="tag">1층 위치</span>
+          <span class="tag">야외 연결</span>
+          <span class="tag">신호등 컨셉</span>
+        </div>
+      </div>
+      <a href="reservation.html" class="studio-link">View Studio &amp; Reserve →</a>
+    </div>
+  </div>
+</section>
+
+<section class="features">
+  <p class="sec-label">Why Rawscene</p>
+  <h2 class="sec-title">공간의 특징</h2>
+  <div class="feat-grid">
+    <div class="feat">
+      <div class="feat-icon">☀</div>
+      <p class="feat-title">자연광 스튜디오</p>
+      <p class="feat-desc">대형 창문을 통해 들어오는 풍부한 자연광으로 별도 조명 없이도 선명하고 자연스러운 결과물을 담을 수 있습니다.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">▲</div>
+      <p class="feat-title">높은 층고</p>
+      <p class="feat-desc">탁 트인 높은 천장이 넓은 공간감을 만들어냅니다. 다양한 앵글과 연출이 자유롭게 가능합니다.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">◉</div>
+      <p class="feat-title">야외 촬영 연결</p>
+      <p class="feat-desc">1층 위치로 스튜디오 바로 앞에서 야외 촬영이 가능합니다. 신호등 등 다채로운 컨셉 소품도 활용하세요.</p>
+    </div>
+  </div>
+</section>
+
+<section class="cta">
+  <p class="sec-label">Book Your Shoot</p>
+  <h2 class="sec-title">예약 문의</h2>
+  <p class="cta-sub">촬영 날짜와 목적을 알려주시면 빠르게 안내드립니다</p>
+  <a href="reservation.html" class="cta-btn">GO TO RESERVATION →</a>
+  <div class="contact-row">
+    <div class="contact-item">Phone<span>010-5788-3190</span></div>
+    <div class="contact-item">Email<span>rawscene3190@gmail.com</span></div>
+    <div class="contact-item">Location<span>현대프리미엄캠퍼스몰 D118</span></div>
+  </div>
+</section>
+
+<footer>
+  <p class="footer-logo">RAWSCENE STUDIO</p>
+  <div class="footer-links">
+    <a href="https://instagram.com" target="_blank">Instagram</a>
+    <a href="reservation.html">Reservation</a>
+  </div>
+  <p class="footer-copy">© 2026 Rawscene Studio. All rights reserved.</p>
+</footer>
+
+</body>
+</html>
