@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schedule — RAWSCENE STUDIO</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, onSnapshot, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCdRQQWXRCsnFa0h3KzfxDPQ6EIXe0NO-8",
+    authDomain: "rawscene-studio.firebaseapp.com",
+    projectId: "rawscene-studio",
+    storageBucket: "rawscene-studio.firebasestorage.app",
+    messagingSenderId: "557905973399",
+    appId: "1:557905973399:web:c0b1f33c40267afffc19d2"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const MONTHS_KO = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const DOW_KO = ['일','월','화','수','목','금','토'];
+
+  function endTime(t) {
+    const [h] = t.split(':').map(Number);
+    return `${String(h+1).padStart(2,'0')}:00`;
+  }
+
+  function formatDate(ds) {
+    const [y,m,d] = ds.split('-').map(Number);
+    const date = new Date(y, m-1, d);
+    const dow = DOW_KO[date.getDay()];
+    return { full: `${y}.${String(m).padStart(2,'0')}.${String(d).padStart(2,'0')}`, dow, month: MONTHS_KO[m-1], day: d, year: y };
+  }
+
+  function groupByMonth(bookings) {
+    const groups = {};
+    bookings.forEach(b => {
+      const [y,m] = b.date.split('-');
+      const key = `${y}-${m}`;
+      if (!groups[key]) groups[key] = { label: `${y}년 ${parseInt(m)}월`, items: [] };
+      groups[key].items.push(b);
+    });
+    return groups;
+  }
+
+  function render(bookings) {
+    const container = document.getElementById('scheduleContainer');
+    const loading = document.getElementById('loadingState');
+    const empty = document.getElementById('emptyState');
+    const counter = document.getElementById('counter');
+
+    loading.style.display = 'none';
+
+    // 오늘 이후 확정 예약만
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const todayStr = today.toISOString().split('T')[0];
+    const confirmed = bookings
+      .filter(b => b.status === 'confirmed' && b.date >= todayStr)
+      .sort((a,b) => a.date > b.date ? 1 : -1);
+
+    counter.textContent = confirmed.length;
+
+    if (!confirmed.length) {
+      empty.style.display = 'flex';
+      container.innerHTML = '';
+      return;
+    }
+
+    empty.style.display = 'none';
+    const groups = groupByMonth(confirmed);
+
+    container.innerHTML = Object.values(groups).map(group => `
+      <div class="month-group">
+        <div class="month-label">${group.label}</div>
+        <div class="booking-list">
+          ${group.items.map((b, i) => {
+            const d = formatDate(b.date);
+            return `
+            <div class="booking-item" style="animation-delay:${i * 0.06}s">
+              <div class="booking-date-col">
+                <div class="date-day">${d.day}</div>
+                <div class="date-dow">${d.dow}</div>
+              </div>
+              <div class="booking-divider"></div>
+              <div class="booking-info">
+                <div class="booking-time">${b.time} — ${endTime(b.time)}</div>
+                <div class="booking-type">${b.type || '촬영'}</div>
+              </div>
+              <div class="booking-badge">확정</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // 실시간 구독
+  const q = query(collection(db, 'bookings'), orderBy('date', 'asc'));
+  onSnapshot(q, snap => {
+    const bookings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    render(bookings);
+  });
+</script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root { --black:#0a0a0a; --white:#fafaf8; --gray:#888; --border:#e0ddd8; --accent:#c8841a; }
+body { font-family:'Barlow',sans-serif; background:var(--white); color:var(--black); min-height:100vh; }
+
+/* NAV */
+nav {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:20px 48px; border-bottom:0.5px solid var(--border);
+  background:rgba(250,250,248,0.97); position:sticky; top:0; z-index:100;
+}
+.logo { font-family:'Cormorant Garamond',serif; font-size:15px; font-weight:400; letter-spacing:0.18em; color:var(--black); text-decoration:none; }
+.nav-links { display:flex; gap:36px; list-style:none; }
+.nav-links a { font-size:11px; letter-spacing:0.12em; color:var(--gray); text-decoration:none; text-transform:uppercase; transition:color 0.2s; }
+.nav-links a:hover, .nav-links a.active { color:var(--black); }
+.nav-links a.active { border-bottom:1px solid var(--black); padding-bottom:2px; }
+.nav-cta { font-size:11px; letter-spacing:0.14em; text-transform:uppercase; border:0.5px solid var(--black); padding:9px 20px; color:var(--black); text-decoration:none; transition:all 0.2s; }
+.nav-cta:hover { background:var(--black); color:var(--white); }
+
+/* HERO */
+.page-hero {
+  height:220px;
+  background:linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.45)),
+    url('https://images.unsplash.com/photo-1497366216548-37526070297c?w=1400&q=80') center/cover;
+  display:flex; flex-direction:column; justify-content:flex-end; padding:36px 48px;
+}
+.hero-tag { font-size:10px; letter-spacing:0.22em; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-bottom:10px; }
+.hero-title { font-family:'Cormorant Garamond',serif; font-size:32px; font-weight:300; color:#fff; letter-spacing:0.1em; }
+
+/* MAIN */
+.main-wrap { max-width:900px; margin:0 auto; padding:64px 48px; }
+
+/* HEADER */
+.schedule-header {
+  display:flex; justify-content:space-between; align-items:flex-end;
+  margin-bottom:48px; padding-bottom:24px; border-bottom:0.5px solid var(--border);
+}
+.schedule-header-left .label { font-size:10px; letter-spacing:0.2em; color:var(--gray); text-transform:uppercase; margin-bottom:6px; }
+.schedule-header-left h1 { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:400; letter-spacing:0.06em; }
+.counter-wrap { text-align:right; }
+.counter-num { font-family:'Cormorant Garamond',serif; font-size:42px; font-weight:300; color:var(--black); line-height:1; }
+.counter-label { font-size:10px; letter-spacing:0.14em; color:var(--gray); text-transform:uppercase; margin-top:4px; }
+
+/* NOTICE */
+.notice-bar {
+  background:#f7f6f2; border:0.5px solid #e8e4dc;
+  padding:14px 20px; margin-bottom:40px;
+  display:flex; align-items:center; gap:10px;
+  font-size:12px; color:#666; letter-spacing:0.03em;
+}
+.notice-dot { width:6px; height:6px; border-radius:50%; background:var(--accent); flex-shrink:0; }
+
+/* LOADING */
+#loadingState {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:80px; gap:16px;
+}
+.loading-ring {
+  width:32px; height:32px; border:1.5px solid #e0e0e0;
+  border-top-color:var(--black); border-radius:50%;
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading-text { font-size:11px; letter-spacing:0.14em; color:var(--gray); text-transform:uppercase; }
+
+/* EMPTY */
+#emptyState {
+  display:none; flex-direction:column; align-items:center;
+  justify-content:center; padding:80px; gap:12px; text-align:center;
+}
+.empty-icon { font-size:32px; color:#ddd; margin-bottom:8px; }
+.empty-title { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:400; color:#bbb; }
+.empty-sub { font-size:12px; color:#ccc; letter-spacing:0.06em; margin-top:4px; }
+
+/* MONTH GROUP */
+.month-group { margin-bottom:48px; }
+.month-label {
+  font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--gray);
+  margin-bottom:16px; padding-bottom:10px; border-bottom:0.5px solid var(--border);
+}
+
+/* BOOKING ITEM */
+.booking-list { display:flex; flex-direction:column; gap:0; }
+.booking-item {
+  display:flex; align-items:center; gap:0;
+  border-bottom:0.5px solid var(--border);
+  padding:20px 0;
+  opacity:0; animation:fadeUp 0.4s ease forwards;
+  transition:background 0.15s;
+}
+.booking-item:hover { background:#f9f9f7; margin:0 -16px; padding:20px 16px; }
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(8px); }
+  to { opacity:1; transform:translateY(0); }
+}
+
+.booking-date-col {
+  width:64px; flex-shrink:0; text-align:center;
+}
+.date-day { font-family:'Cormorant Garamond',serif; font-size:32px; font-weight:300; line-height:1; color:var(--black); }
+.date-dow { font-size:10px; letter-spacing:0.12em; color:var(--gray); text-transform:uppercase; margin-top:3px; }
+
+.booking-divider { width:0.5px; height:40px; background:var(--border); margin:0 28px; flex-shrink:0; }
+
+.booking-info { flex:1; }
+.booking-time { font-size:15px; font-weight:400; letter-spacing:0.04em; color:var(--black); margin-bottom:5px; }
+.booking-type { font-size:11px; letter-spacing:0.1em; color:var(--gray); text-transform:uppercase; }
+
+.booking-badge {
+  font-size:9px; letter-spacing:0.12em; text-transform:uppercase;
+  border:0.5px solid var(--black); padding:4px 10px; color:var(--black);
+  flex-shrink:0;
+}
+
+/* FOOTER */
+footer {
+  padding:28px 48px; border-top:0.5px solid var(--border);
+  display:flex; justify-content:space-between; align-items:center;
+  margin-top:40px;
+}
+.footer-logo { font-family:'Cormorant Garamond',serif; font-size:13px; letter-spacing:0.16em; }
+.footer-links { display:flex; gap:28px; }
+.footer-links a { font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--gray); text-decoration:none; }
+.footer-links a:hover { color:var(--black); }
+.footer-copy { font-size:10px; color:#ccc; letter-spacing:0.04em; }
+
+/* REFRESH BTN */
+.refresh-info { font-size:10px; color:#bbb; letter-spacing:0.08em; display:flex; align-items:center; gap:6px; }
+.live-dot { width:6px; height:6px; border-radius:50%; background:#4caf50; animation:pulse 2s ease infinite; flex-shrink:0; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo">RAWSCENE STUDIO</a>
+  <ul class="nav-links">
+    <li><a href="index.html">Studio</a></li>
+    <li><a href="#">Info</a></li>
+    <li><a href="#">Archive</a></li>
+    <li><a href="schedule.html" class="active">Schedule</a></li>
+  </ul>
+  <a href="reservation.html" class="nav-cta">Reservation</a>
+</nav>
+
+<div class="page-hero">
+  <p class="hero-tag">Rawscene Studio · Namyangju</p>
+  <h1 class="hero-title">SCHEDULE</h1>
+</div>
+
+<div class="main-wrap">
+
+  <div class="schedule-header">
+    <div class="schedule-header-left">
+      <p class="label">Confirmed Reservations</p>
+      <h1>예약 현황</h1>
+    </div>
+    <div class="counter-wrap">
+      <div class="counter-num" id="counter">—</div>
+      <div class="counter-label">확정 예약</div>
+    </div>
+  </div>
+
+  <div class="notice-bar">
+    <div class="notice-dot"></div>
+    확정된 예약만 표시됩니다. 대기 중인 예약은 입금 확인 후 확정됩니다.
+    <div style="margin-left:auto" class="refresh-info">
+      <div class="live-dot"></div>
+      실시간 업데이트
+    </div>
+  </div>
+
+  <div id="loadingState">
+    <div class="loading-ring"></div>
+    <p class="loading-text">불러오는 중...</p>
+  </div>
+
+  <div id="emptyState">
+    <div class="empty-icon">◎</div>
+    <p class="empty-title">예약된 일정이 없습니다</p>
+    <p class="empty-sub">확정된 예약이 생기면 여기에 표시됩니다</p>
+  </div>
+
+  <div id="scheduleContainer"></div>
+
+</div>
+
+<footer>
+  <p class="footer-logo">RAWSCENE STUDIO</p>
+  <div class="footer-links">
+    <a href="https://instagram.com" target="_blank">Instagram</a>
+    <a href="reservation.html">Reservation</a>
+  </div>
+  <p class="footer-copy">© 2026 Rawscene Studio. All rights reserved.</p>
+</footer>
+
+</body>
+</html>
