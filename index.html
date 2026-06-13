@@ -7,12 +7,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-:root{--black:#0a0a0a;--white:#fafaf8;--gray:#888;--border:#e0ddd8;}h
+:root{--black:#0a0a0a;--white:#fafaf8;--gray:#888;--border:#e0ddd8;--soft:#f4f3f0;--accent:#c8841a;}
 body{font-family:'Barlow',sans-serif;background:var(--white);color:var(--black);}
 a{text-decoration:none;color:inherit;}
 
 /* NAV */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;justify-content:space-between;align-items:center;padding:20px 48px;background:rgba(250,250,248,0.95);border-bottom:0.5px solid var(--border);}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;justify-content:space-between;align-items:center;padding:20px 48px;background:rgba(250,250,248,0.95);border-bottom:0.5px solid var(--border);backdrop-filter:blur(8px);}
 .logo{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:400;letter-spacing:0.18em;}
 .nav-links{display:flex;gap:36px;list-style:none;}
 .nav-links a{font-size:11px;letter-spacing:0.12em;color:var(--gray);text-transform:uppercase;transition:color 0.2s;}
@@ -21,25 +21,36 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;justify-content
 .nav-cta:hover{background:var(--black);color:var(--white);}
 
 /* HERO */
-.hero{height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding:60px 48px;background:#0a0a0a url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=80') center/cover no-repeat;position:relative;}
-.hero::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0.1) 60%);}
+.hero{height:100vh;min-height:680px;display:flex;flex-direction:column;justify-content:flex-end;padding:60px 48px;background:#0a0a0a url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=80') center/cover no-repeat;position:relative;}
+.hero::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.78) 0%,rgba(0,0,0,0.18) 62%);}
 .hero-content{position:relative;z-index:1;}
 .hero-tag{font-size:10px;letter-spacing:0.24em;color:rgba(255,255,255,0.55);text-transform:uppercase;margin-bottom:20px;}
 .hero-title{font-family:'Cormorant Garamond',serif;font-size:72px;font-weight:300;color:#fff;letter-spacing:0.06em;line-height:1.0;margin-bottom:28px;}
-.hero-desc{font-size:13px;color:rgba(255,255,255,0.65);letter-spacing:0.06em;line-height:1.85;max-width:420px;margin-bottom:36px;}
-.hero-btn{display:inline-block;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;background:#fff;color:#0a0a0a;padding:15px 36px;transition:all 0.2s;}
-.hero-btn:hover{background:transparent;color:#fff;border:0.5px solid #fff;}
+.hero-desc{font-size:13px;color:rgba(255,255,255,0.7);letter-spacing:0.06em;line-height:1.9;max-width:460px;margin-bottom:34px;}
+.hero-actions{display:flex;gap:10px;flex-wrap:wrap;}
+.hero-btn{display:inline-block;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;background:#fff;color:#0a0a0a;padding:15px 34px;border:0.5px solid #fff;transition:all 0.2s;}
+.hero-btn:hover{background:transparent;color:#fff;}
+.hero-btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,0.45);}
+.hero-btn.ghost:hover{background:#fff;color:#0a0a0a;border-color:#fff;}
 
 /* SECTIONS */
-section{padding:80px 48px;}
+section{padding:86px 48px;}
 .sec-label{font-size:10px;letter-spacing:0.22em;color:var(--gray);text-transform:uppercase;margin-bottom:8px;}
-.sec-title{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;letter-spacing:0.06em;margin-bottom:48px;}
+.sec-title{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:300;letter-spacing:0.06em;margin-bottom:42px;}
+.sec-desc{font-size:13px;color:#666;line-height:1.9;letter-spacing:0.04em;max-width:680px;margin-top:-28px;margin-bottom:42px;}
+
+/* QUICK INFO */
+.quick-info{display:grid;grid-template-columns:repeat(4,1fr);border-top:0.5px solid var(--border);border-bottom:0.5px solid var(--border);background:#fff;}
+.quick-item{padding:28px 26px;border-right:0.5px solid var(--border);}
+.quick-item:last-child{border-right:none;}
+.quick-label{font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gray);margin-bottom:8px;}
+.quick-value{font-size:14px;letter-spacing:0.04em;line-height:1.7;}
 
 /* STUDIO CARD */
-.studio-grid{display:grid;grid-template-columns:1fr 1fr;border:0.5px solid var(--border);margin-bottom:16px;}
-.studio-img{height:380px;background:url('https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80') center/cover no-repeat;}
+.studio-grid{display:grid;grid-template-columns:1fr 1fr;border:0.5px solid var(--border);margin-bottom:16px;background:#fff;}
+.studio-img{height:420px;background:url('https://images.unsplash.com/photo-1497366216548-37526070297c?w=1000&q=80') center/cover no-repeat;}
 .studio-body{padding:48px;display:flex;flex-direction:column;justify-content:space-between;}
-.studio-name{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:400;letter-spacing:0.08em;margin-bottom:12px;}
+.studio-name{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:400;letter-spacing:0.08em;margin-bottom:12px;}
 .studio-addr{font-size:12px;color:var(--gray);line-height:1.9;letter-spacing:0.04em;margin-bottom:24px;}
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:32px;}
 .tag{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;border:0.5px solid var(--border);padding:5px 12px;color:var(--gray);}
@@ -47,23 +58,46 @@ section{padding:80px 48px;}
 .studio-link:hover{gap:18px;}
 
 /* FEATURES */
-.features{background:#f4f3f0;}
+.features{background:var(--soft);}
 .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin-top:48px;}
-.feat{padding:32px;background:#fff;border:0.5px solid var(--border);}
+.feat{padding:34px 32px;background:#fff;border:0.5px solid var(--border);}
 .feat-icon{font-size:22px;margin-bottom:20px;color:var(--gray);}
 .feat-title{font-size:13px;font-weight:500;letter-spacing:0.08em;margin-bottom:10px;}
 .feat-desc{font-size:12px;color:var(--gray);line-height:1.85;}
 
+/* PRICE */
+.price-section{background:#fff;}
+.price-wrap{display:grid;grid-template-columns:0.9fr 1.1fr;gap:38px;align-items:start;}
+.price-card{border:0.5px solid var(--border);padding:36px;background:#fafaf8;}
+.price-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:400;letter-spacing:0.06em;margin-bottom:14px;}
+.price-main{font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:300;letter-spacing:0.04em;margin-bottom:8px;}
+.price-sub{font-size:12px;color:var(--gray);line-height:1.8;margin-bottom:26px;}
+.price-note{font-size:11px;color:#aaa;line-height:1.8;margin-top:18px;}
+.info-list{border:0.5px solid var(--border);}
+.info-row{display:grid;grid-template-columns:150px 1fr;border-bottom:0.5px solid var(--border);}
+.info-row:last-child{border-bottom:none;}
+.info-key{padding:18px 20px;font-size:10px;letter-spacing:0.14em;color:var(--gray);text-transform:uppercase;background:#fafaf8;border-right:0.5px solid var(--border);}
+.info-val{padding:18px 20px;font-size:13px;line-height:1.8;color:#555;}
+
+/* PROCESS */
+.process{background:#f8f7f3;}
+.process-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:0.5px solid var(--border);background:#fff;}
+.process-item{padding:30px 24px;border-right:0.5px solid var(--border);}
+.process-item:last-child{border-right:none;}
+.process-num{font-family:'Cormorant Garamond',serif;font-size:28px;color:#bbb;margin-bottom:18px;}
+.process-title{font-size:13px;letter-spacing:0.08em;margin-bottom:10px;}
+.process-desc{font-size:12px;color:var(--gray);line-height:1.75;}
+
 /* CTA */
 .cta{background:var(--black);color:#fff;text-align:center;}
 .cta .sec-label{color:rgba(255,255,255,0.4);}
-.cta .sec-title{color:#fff;font-size:40px;margin-bottom:14px;}
-.cta-sub{font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:40px;letter-spacing:0.04em;}
+.cta .sec-title{color:#fff;font-size:42px;margin-bottom:14px;}
+.cta-sub{font-size:13px;color:rgba(255,255,255,0.55);margin-bottom:40px;letter-spacing:0.04em;line-height:1.8;}
 .cta-btn{display:inline-block;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;border:0.5px solid rgba(255,255,255,0.4);padding:15px 44px;color:#fff;transition:all 0.2s;}
 .cta-btn:hover{background:#fff;color:var(--black);border-color:#fff;}
-.contact-row{display:flex;justify-content:center;gap:60px;margin-top:48px;}
+.contact-row{display:flex;justify-content:center;gap:60px;margin-top:48px;flex-wrap:wrap;}
 .contact-item{font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:0.08em;text-transform:uppercase;}
-.contact-item span{display:block;color:rgba(255,255,255,0.7);margin-top:6px;font-size:13px;text-transform:none;letter-spacing:0.04em;}
+.contact-item span{display:block;color:rgba(255,255,255,0.75);margin-top:6px;font-size:13px;text-transform:none;letter-spacing:0.04em;}
 
 /* FOOTER */
 footer{padding:28px 48px;border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
@@ -72,16 +106,42 @@ footer{padding:28px 48px;border-top:0.5px solid var(--border);display:flex;justi
 .footer-links a{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray);}
 .footer-links a:hover{color:var(--black);}
 .footer-copy{font-size:10px;color:#ccc;letter-spacing:0.04em;}
+
+/* MOBILE */
+@media(max-width:900px){
+  nav{padding:18px 20px;flex-wrap:wrap;gap:14px;}
+  .nav-links{order:3;width:100%;justify-content:space-between;gap:0;}
+  .nav-cta{padding:8px 14px;}
+  .hero{height:auto;min-height:660px;padding:130px 22px 48px;}
+  .hero-title{font-size:48px;}
+  .hero-desc{font-size:12px;}
+  section{padding:62px 22px;}
+  .quick-info{grid-template-columns:1fr 1fr;}
+  .quick-item{border-bottom:0.5px solid var(--border);}
+  .quick-item:nth-child(2){border-right:none;}
+  .quick-item:nth-child(3),.quick-item:nth-child(4){border-bottom:none;}
+  .studio-grid,.price-wrap{grid-template-columns:1fr;}
+  .studio-img{height:300px;}
+  .studio-body{padding:32px 24px;}
+  .feat-grid,.process-grid{grid-template-columns:1fr;}
+  .feat,.process-item{border-right:none;border-bottom:0.5px solid var(--border);}
+  .process-item:last-child{border-bottom:none;}
+  .info-row{grid-template-columns:1fr;}
+  .info-key{border-right:none;border-bottom:0.5px solid var(--border);}
+  .contact-row{gap:24px;flex-direction:column;}
+  footer{padding:24px 20px;flex-direction:column;gap:18px;text-align:center;}
+}
 </style>
 </head>
+
 <body>
 
 <nav>
   <a href="index.html" class="logo">RAWSCENE STUDIO</a>
   <ul class="nav-links">
     <li><a href="index.html">Studio</a></li>
-    <li><a href="#">Info</a></li>
-    <li><a href="#">Archive</a></li>
+    <li><a href="#info">Info</a></li>
+    <li><a href="#price">Price</a></li>
     <li><a href="schedule.html">Schedule</a></li>
   </ul>
   <a href="reservation.html" class="nav-cta">Reservation</a>
@@ -91,14 +151,44 @@ footer{padding:28px 48px;border-top:0.5px solid var(--border);display:flex;justi
   <div class="hero-content">
     <p class="hero-tag">Rental Studio · Namyangju, Gyeonggi</p>
     <h1 class="hero-title">RAWSCENE<br>STUDIO</h1>
-    <p class="hero-desc">높은 층고와 자연광이 가득한 렌탈 스튜디오.<br>1층 위치로 야외 촬영까지 바로 연결됩니다.<br>신호등 등 다양한 야외 컨셉이 준비되어 있습니다.</p>
-    <a href="reservation.html" class="hero-btn">예약 문의하기 →</a>
+    <p class="hero-desc">
+      자연광이 오래 머무는 남양주 렌탈 스튜디오.<br>
+      높은 층고와 1층 야외 연결 동선으로 룩북, 제품, 인물, 영상 촬영까지 유연하게 사용할 수 있습니다.
+    </p>
+    <div class="hero-actions">
+      <a href="reservation.html" class="hero-btn">예약하기 →</a>
+      <a href="schedule.html" class="hero-btn ghost">스케줄 확인 →</a>
+    </div>
   </div>
 </section>
 
-<section>
+<div class="quick-info">
+  <div class="quick-item">
+    <p class="quick-label">Location</p>
+    <p class="quick-value">남양주 다산<br>현대프리미엄캠퍼스몰 D118</p>
+  </div>
+  <div class="quick-item">
+    <p class="quick-label">Space</p>
+    <p class="quick-value">자연광 · 높은 층고<br>1층 야외 연결</p>
+  </div>
+  <div class="quick-item">
+    <p class="quick-label">Parking</p>
+    <p class="quick-value">룸당 1대 가능<br>추가 주차 별도 안내</p>
+  </div>
+  <div class="quick-item">
+    <p class="quick-label">Reservation</p>
+    <p class="quick-value">온라인 신청 후<br>입금 확인 시 확정</p>
+  </div>
+</div>
+
+<section id="info">
   <p class="sec-label">Our Space</p>
   <h2 class="sec-title">Studio</h2>
+  <p class="sec-desc">
+    RAWSCENE STUDIO는 자연광, 높은 층고, 야외 동선을 함께 활용할 수 있는 렌탈 스튜디오입니다.
+    패션 룩북, 제품 촬영, 인물 프로필, 브랜드 콘텐츠 촬영에 적합한 담백한 공간을 지향합니다.
+  </p>
+
   <div class="studio-grid">
     <div class="studio-img"></div>
     <div class="studio-body">
@@ -116,6 +206,8 @@ footer{padding:28px 48px;border-top:0.5px solid var(--border);display:flex;justi
           <span class="tag">1층 위치</span>
           <span class="tag">야외 연결</span>
           <span class="tag">신호등 컨셉</span>
+          <span class="tag">룩북 촬영</span>
+          <span class="tag">제품 촬영</span>
         </div>
       </div>
       <a href="reservation.html" class="studio-link">View Studio &amp; Reserve →</a>
@@ -126,30 +218,107 @@ footer{padding:28px 48px;border-top:0.5px solid var(--border);display:flex;justi
 <section class="features">
   <p class="sec-label">Why Rawscene</p>
   <h2 class="sec-title">공간의 특징</h2>
+
   <div class="feat-grid">
     <div class="feat">
       <div class="feat-icon">☀</div>
       <p class="feat-title">자연광 스튜디오</p>
-      <p class="feat-desc">대형 창문을 통해 들어오는 풍부한 자연광으로 별도 조명 없이도 선명하고 자연스러운 결과물을 담을 수 있습니다.</p>
+      <p class="feat-desc">대형 창문을 통해 들어오는 자연광으로 담백하고 선명한 결과물을 촬영할 수 있습니다.</p>
     </div>
     <div class="feat">
       <div class="feat-icon">▲</div>
       <p class="feat-title">높은 층고</p>
-      <p class="feat-desc">탁 트인 높은 천장이 넓은 공간감을 만들어냅니다. 다양한 앵글과 연출이 자유롭게 가능합니다.</p>
+      <p class="feat-desc">탁 트인 공간감으로 전신 룩북, 인물, 영상 촬영 등 다양한 앵글 연출이 가능합니다.</p>
     </div>
     <div class="feat">
       <div class="feat-icon">◉</div>
       <p class="feat-title">야외 촬영 연결</p>
-      <p class="feat-desc">1층 위치로 스튜디오 바로 앞에서 야외 촬영이 가능합니다. 신호등 등 다채로운 컨셉 소품도 활용하세요.</p>
+      <p class="feat-desc">1층 위치로 스튜디오 안팎의 촬영 동선을 자연스럽게 연결할 수 있습니다.</p>
+    </div>
+  </div>
+</section>
+
+<section class="price-section" id="price">
+  <p class="sec-label">Price & Guide</p>
+  <h2 class="sec-title">이용 안내</h2>
+
+  <div class="price-wrap">
+    <div class="price-card">
+      <p class="price-title">Studio A</p>
+      <p class="price-main">₩ 50,000</p>
+      <p class="price-sub">
+        1시간 기준 / 최소 2시간 예약<br>
+        VAT 별도 · 예약금 입금 후 최종 확정
+      </p>
+      <a href="reservation.html" class="studio-link">Reserve Now →</a>
+      <p class="price-note">
+        * 가격은 운영 정책에 따라 변경될 수 있습니다.<br>
+        * 장시간 대관, 영상 촬영, 상업 촬영은 별도 문의 부탁드립니다.
+      </p>
+    </div>
+
+    <div class="info-list">
+      <div class="info-row">
+        <div class="info-key">운영 방식</div>
+        <div class="info-val">온라인 예약 신청 후, 입금 확인 시 관리자가 확정 처리합니다.</div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">기준 인원</div>
+        <div class="info-val">기준 인원 4인 / 초과 인원은 사전 문의 부탁드립니다.</div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">주차 안내</div>
+        <div class="info-val">예약 룸당 1대 가능하며, 추가 차량은 인근 공영주차장 이용을 안내드립니다.</div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">취소 규정</div>
+        <div class="info-val">예약일 기준 7일 전 100% 환불, 이후 일정에 따라 위약금이 발생합니다.</div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">문의</div>
+        <div class="info-val">010-5788-3190 / rawscene3190@gmail.com</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="process">
+  <p class="sec-label">Reservation Process</p>
+  <h2 class="sec-title">예약 진행 순서</h2>
+
+  <div class="process-grid">
+    <div class="process-item">
+      <p class="process-num">01</p>
+      <p class="process-title">스케줄 확인</p>
+      <p class="process-desc">예약 현황 페이지에서 원하는 날짜와 시간을 확인합니다.</p>
+    </div>
+    <div class="process-item">
+      <p class="process-num">02</p>
+      <p class="process-title">예약 신청</p>
+      <p class="process-desc">예약 페이지에서 날짜, 시간, 촬영 정보를 입력합니다.</p>
+    </div>
+    <div class="process-item">
+      <p class="process-num">03</p>
+      <p class="process-title">입금 확인</p>
+      <p class="process-desc">입금 순서에 따라 예약이 확정되며, 확정 전까지는 대기 상태입니다.</p>
+    </div>
+    <div class="process-item">
+      <p class="process-num">04</p>
+      <p class="process-title">예약 확정</p>
+      <p class="process-desc">관리자 확인 후 스케줄 페이지에 확정 예약으로 표시됩니다.</p>
     </div>
   </div>
 </section>
 
 <section class="cta">
   <p class="sec-label">Book Your Shoot</p>
-  <h2 class="sec-title">예약 문의</h2>
-  <p class="cta-sub">촬영 날짜와 목적을 알려주시면 빠르게 안내드립니다</p>
+  <h2 class="sec-title">예약하기</h2>
+  <p class="cta-sub">
+    촬영 날짜와 목적을 알려주시면 예약 가능 여부 확인 후 안내드립니다.<br>
+    확정 예약은 스케줄 페이지에서 실시간으로 확인하실 수 있습니다.
+  </p>
   <a href="reservation.html" class="cta-btn">GO TO RESERVATION →</a>
+
   <div class="contact-row">
     <div class="contact-item">Phone<span>010-5788-3190</span></div>
     <div class="contact-item">Email<span>rawscene3190@gmail.com</span></div>
@@ -162,6 +331,7 @@ footer{padding:28px 48px;border-top:0.5px solid var(--border);display:flex;justi
   <div class="footer-links">
     <a href="https://instagram.com" target="_blank">Instagram</a>
     <a href="reservation.html">Reservation</a>
+    <a href="schedule.html">Schedule</a>
   </div>
   <p class="footer-copy">© 2026 Rawscene Studio. All rights reserved.</p>
 </footer>
