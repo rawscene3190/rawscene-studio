@@ -1,5 +1,99 @@
 <!DOCTYPE html>
 <html lang="ko">
+  <style>
+/* 모바일 비율 수정 + 상단 사진 RAWSCENE 사진으로 변경 */
+.page-hero{
+  background:
+    linear-gradient(to bottom,rgba(0,0,0,.25),rgba(0,0,0,.45)),
+    url('images/studio-01.jpg') center/cover no-repeat !important;
+}
+
+@media (max-width: 768px){
+  body{
+    overflow-x:hidden !important;
+  }
+
+  nav{
+    position:relative !important;
+    padding:18px 20px !important;
+    gap:22px !important;
+    overflow-x:auto !important;
+    white-space:nowrap !important;
+  }
+
+  .page-hero{
+    height:260px !important;
+    min-height:260px !important;
+  }
+
+  .page-hero h1,
+  .hero-title{
+    font-size:34px !important;
+    line-height:1.1 !important;
+    letter-spacing:.08em !important;
+  }
+
+  .res-wrap,
+  .reservation-wrap,
+  .reservation-grid,
+  .booking-grid,
+  .main-grid,
+  .form-grid,
+  .content-grid{
+    display:block !important;
+    grid-template-columns:1fr !important;
+    width:100% !important;
+  }
+
+  section,
+  .reservation-section,
+  .booking-section,
+  .res-section{
+    padding:48px 22px !important;
+  }
+
+  .calendar-wrap,
+  .calendar-area,
+  .form-wrap,
+  .form-area,
+  .reservation-form,
+  form{
+    width:100% !important;
+    max-width:100% !important;
+  }
+
+  input,
+  select,
+  textarea,
+  button{
+    width:100% !important;
+    max-width:100% !important;
+    font-size:16px !important;
+  }
+
+  .input-row,
+  .contact-row,
+  .field-row{
+    display:block !important;
+  }
+
+  .notice-box,
+  .policy-box,
+  .price-guide-box,
+  .terms-box,
+  .caution-box{
+    max-height:none !important;
+    overflow:visible !important;
+    font-size:14px !important;
+    line-height:1.8 !important;
+  }
+
+  .calendar{
+    width:100% !important;
+    min-width:0 !important;
+  }
+}
+</style>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
