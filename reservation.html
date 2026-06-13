@@ -251,7 +251,8 @@
     // 시간 계산
     const startH = parseInt(selStartTime), endH = parseInt(selEndTime);
     const duration = timeToNum(selEndTime)/100 - timeToNum(selStartTime)/100;
-    el.innerHTML=`<strong>스튜디오:</strong> RAWSCENE STUDIO &nbsp;|&nbsp; <strong>날짜:</strong> ${y}년 ${parseInt(m)}월 ${parseInt(d)}일 &nbsp;|&nbsp; <strong>시간:</strong> ${selStartTime} – ${selEndTime} <span style="color:var(--gray);font-size:11px">(${duration}시간)</span>`;
+    const estimated = getEstimatedPrice();
+    el.innerHTML=`<strong>스튜디오:</strong> RAWSCENE STUDIO &nbsp;|&nbsp; <strong>날짜:</strong> ${y}년 ${parseInt(m)}월 ${parseInt(d)}일 &nbsp;|&nbsp; <strong>시간:</strong> ${selStartTime} – ${selEndTime} <span style="color:var(--gray);font-size:11px">(${duration}시간)</span><br><strong>예상 이용료:</strong> ${formatWon(estimated)} <span style="color:var(--gray);font-size:11px">(3인 기준 / 초과 1인당 시간당 5,000원 추가)</span>`;
     el.className='sel-info';
   }
 
@@ -287,7 +288,10 @@
         endTime:selEndTime,
         name, phone,
         email:document.getElementById('fEmail').value.trim(),
-        type, people:document.getElementById('fPeople').value,
+        type,
+        people:document.getElementById('fPeople').value,
+        estimatedPrice:getEstimatedPrice(),
+        priceRule:'1시간 30,000원 / 최소 2시간 / 3인 기준 / 4인부터 1인당 시간당 5,000원 추가',
         note:document.getElementById('fNote').value.trim(),
         status:'pending', createdAt:new Date().toISOString()
       });
@@ -306,6 +310,30 @@
       toast(e.message || '오류가 발생했습니다. 다시 시도해 주세요.','err',10000);
     }
   };
+
+  function getDurationHours() {
+    if (!selStartTime || !selEndTime) return 0;
+    return timeToNum(selEndTime) / 100 - timeToNum(selStartTime) / 100;
+  }
+
+  function getPeopleCount() {
+    const raw = document.getElementById('fPeople')?.value || '3명';
+    const n = parseInt(raw.replace(/[^0-9]/g, ''), 10);
+    return Number.isFinite(n) ? n : 3;
+  }
+
+  function getEstimatedPrice() {
+    const duration = getDurationHours();
+    const people = getPeopleCount();
+    const base = duration * 30000;
+    const extraPeople = Math.max(0, people - 3);
+    const extra = duration * extraPeople * 5000;
+    return base + extra;
+  }
+
+  function formatWon(n) {
+    return n.toLocaleString('ko-KR') + '원';
+  }
 
   function getTimeDisplay(b){
     if(b.startTime && b.endTime) return `${b.startTime} – ${b.endTime}`;
@@ -421,6 +449,11 @@
   window.addEventListener('DOMContentLoaded',()=>{
     renderCalendar();
     startListening();
+
+    const peopleSelect = document.getElementById('fPeople');
+    if (peopleSelect) {
+      peopleSelect.addEventListener('change', updateSelInfo);
+    }
   });
 </script>
 <style>
@@ -493,6 +526,8 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:18px 4
 
 /* FORM */
 .form-panel{padding:36px 40px;}
+.price-guide-box{border:0.5px solid var(--border);padding:13px 15px;margin-bottom:14px;background:#fff;font-size:12px;color:#555;line-height:1.75;}
+.price-guide-title{font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--black);margin-bottom:5px;font-weight:500;}
 .sel-info{border:0.5px solid var(--border);padding:12px 15px;margin-bottom:16px;font-size:12px;color:#555;line-height:1.85;background:#fafaf8;}
 .sel-info.empty{color:#bbb;font-style:italic;background:#fff;}
 .sel-info strong{color:var(--black);font-weight:500;}
@@ -635,6 +670,11 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:18px 4
     <div class="form-panel">
       <p class="panel-label">Step 2</p>
       <h2 class="panel-title">예약 정보 입력</h2>
+      <div class="price-guide-box">
+        <p class="price-guide-title">이용 요금 안내</p>
+        <p>1시간 기준 30,000원 · 최소 2시간 예약</p>
+        <p>3인 기준 · 4인부터 1인 초과 시 시간당 5,000원 추가</p>
+      </div>
       <div class="sel-info empty" id="selInfo">날짜와 시간을 먼저 선택해 주세요.</div>
       <div class="fg"><label class="fl">이름 / 업체명 *</label><input class="fi" id="fName" type="text" placeholder="홍길동 / OO스튜디오"></div>
       <div class="frow">
@@ -653,7 +693,16 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:18px 4
       <div class="fg">
         <label class="fl">인원 수</label>
         <select class="fs" id="fPeople">
-          <option>1–2명</option><option>3–5명</option><option>6–10명</option><option>7명</option>
+          <option>1명</option>
+          <option>2명</option>
+          <option selected>3명</option>
+          <option>4명</option>
+          <option>5명</option>
+          <option>6명</option>
+          <option>7명</option>
+          <option>8명</option>
+          <option>9명</option>
+          <option>10명 이상</option>
         </select>
       </div>
       <div class="fg"><label class="fl">요청 사항</label><textarea class="ft" id="fNote" placeholder="특별한 요청이나 궁금한 점을 적어주세요."></textarea></div>
@@ -685,7 +734,7 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:18px 4
             <li>이용 후 남은 금액을 결제하시면 됩니다.</li>
             <li>가구 및 소품 파손 시 물품가에 100% 배상책임이 있습니다.</li>
             <li>12시간 이하의 이용일 경우 예약 시간보다 일찍 이용이 끝나더라도 예약된 시간으로 정산됩니다.</li>
-            <li>주차는 예약하신 룸 당 1대 가능합니다. 추가 주차를 원하시면 [다산 제3 공영주차장] [다산 제4 공영주차장] 유료주차장 안내해드립니다.</li>
+            <li>주차는 예약 기준 1대 가능합니다. 추가 주차를 원하시면 [다산 제3 공영주차장] [다산 제4 공영주차장] 유료주차장 안내해드립니다.</li>
             <li>세금계산서 발행 가능합니다. (부가세 10% 별도)</li>
             <li>시즌별 가구, 소품 등이 변경될 수 있습니다.</li>
           </ul>
@@ -709,6 +758,8 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:18px 4
       <p class="form-notice">
         * <strong>예약 신청 직후에는 대기 상태</strong>로 접수됩니다.<br>
         * <strong>입금 확인 후 관리자가 확정 처리하면 예약이 최종 확정됩니다.</strong><br>
+        * 이용 요금: 1시간 30,000원 / 최소 2시간 예약<br>
+        * 기준 인원: 3인 / 4인부터 1인당 시간당 5,000원 추가<br>
         * 이미 예약된 시간은 선택이 불가합니다.<br>
         * 예약 가능 기간: 오늘부터 3개월 이내<br>
         * 문의: 010-5788-3190 · rawscene3190@gmail.com
