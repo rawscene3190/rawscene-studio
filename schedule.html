@@ -47,6 +47,39 @@
     return `${nextHour}:${m}`;
   }
 
+  function maskName(name) {
+    if (!name) return "예약자";
+    const clean = String(name).trim();
+
+    if (clean.length <= 1) return clean + "*";
+
+    if (clean.includes("/") || clean.includes(" ")) {
+      const firstPart = clean.split(/[\/\s]+/)[0];
+      return firstPart[0] + "*".repeat(Math.min(firstPart.length - 1, 3));
+    }
+
+    return clean[0] + "*".repeat(Math.min(clean.length - 1, 3));
+  }
+
+  function phoneTail(phone) {
+    if (!phone) return "";
+    const numbers = String(phone).replace(/\D/g, "");
+    return numbers.slice(-4);
+  }
+
+  function bookingTimeText(b) {
+    const start = b.startTime || b.time || "";
+    const end = b.endTime || endTime(start);
+    if (!start) return "예약 완료";
+    return `${start} - ${end}`;
+  }
+
+  function bookingUserText(b) {
+    const name = maskName(b.name);
+    const tail = phoneTail(b.phone);
+    return tail ? `${name} (${tail})` : name;
+  }
+
   function getConfirmedBookings() {
     return allBookings.filter(b => b.status === "confirmed" && b.date);
   }
@@ -105,7 +138,8 @@
             dayBookings.length
               ? dayBookings.map(b => `
                 <div class="booking-chip">
-                  ${b.time || ""}${b.time ? " - " + endTime(b.time) : ""}
+                  <div class="booking-time">${bookingTimeText(b)}</div>
+                  <div class="booking-user">${bookingUserText(b)}</div>
                 </div>
               `).join("")
               : `<div class="available">예약 가능</div>`
@@ -427,10 +461,27 @@ nav {
   display:block;
   font-size:11px;
   letter-spacing:0.04em;
-  padding:6px 7px;
+  padding:7px 8px;
   margin-bottom:5px;
   background:var(--black);
   color:#fff;
+}
+
+.booking-time {
+  font-size:11px;
+  line-height:1.25;
+  white-space:nowrap;
+}
+
+.booking-user {
+  margin-top:4px;
+  font-size:10px;
+  line-height:1.25;
+  color:rgba(255,255,255,0.72);
+  letter-spacing:0.03em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
 .available {
@@ -603,7 +654,7 @@ footer {
 
   <div class="notice-bar">
     <div class="notice-dot"></div>
-    확정된 예약만 표시됩니다. 대기 중인 예약은 입금 확인 후 확정됩니다.
+    확정된 예약만 표시됩니다. 예약자는 이름 일부와 연락처 뒷자리로 확인할 수 있습니다.
     <div class="live-info">
       <div class="live-dot"></div>
       실시간 업데이트
@@ -617,9 +668,7 @@ footer {
       <button class="month-btn" id="nextMonth" type="button">→</button>
     </div>
 
-```
 <div class="calendar-grid" id="calendarGrid"></div>
-```
 
   </div>
 
@@ -628,7 +677,7 @@ footer {
 
   <div class="guide-box">
     * 예약 가능 날짜는 “예약 가능”으로 표시됩니다.<br>
-    * 확정 예약이 있는 날짜에는 예약 시간이 표시됩니다.<br>
+    * 확정 예약이 있는 날짜에는 예약 시간과 예약자 확인 정보가 표시됩니다.<br>
     * 월이 바뀌면 해당 월의 날짜가 자동으로 다시 표시됩니다.
   </div>
 
