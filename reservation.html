@@ -594,8 +594,7 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:18px 4
   <a href="index.html" class="logo">RAWSCENE STUDIO</a>
   <ul class="nav-links">
     <li><a href="index.html">Studio</a></li>
-    <li><a onclick="showPage('res')" id="nav-res" class="active" style="cursor:pointer">Reservation</a></li>
-    <li><a onclick="showPage('admin')" id="nav-admin" style="cursor:pointer">Admin</a></li>
+    <li><a href="reservation.html" class="active">Reservation</a></li>
   </ul>
 </nav>
 
@@ -723,35 +722,6 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:18px 4
   </div>
 </div>
 
-<!-- ══ 관리자 페이지 ══ -->
-<div class="page" id="page-admin">
-  <div id="loginBox" class="login-box">
-    <p class="login-title">ADMIN LOGIN</p>
-    <div class="fg"><label class="fl">비밀번호</label><input class="fi" id="adminPw" type="password" placeholder="관리자 비밀번호 입력" onkeydown="if(event.key==='Enter')adminLogin()"></div>
-    <p class="login-err" id="loginErr">비밀번호가 올바르지 않습니다.</p>
-    <button class="login-btn" onclick="adminLogin()">로그인</button>
-  </div>
-  <div id="adminDash" style="display:none;" class="admin-page">
-    <div class="admin-top">
-      <div><h2 class="admin-title">예약 관리</h2><p class="admin-sub">RAWSCENE STUDIO A · Firebase 실시간 연동</p></div>
-      <button class="logout-btn" onclick="adminLogout()">로그아웃</button>
-    </div>
-    <div class="admin-stats" id="adminStats"></div>
-    <div class="admin-filters">
-      <button class="filter-btn on" onclick="setFilter('all',this)">전체</button>
-      <button class="filter-btn" onclick="setFilter('pending',this)">대기중</button>
-      <button class="filter-btn" onclick="setFilter('confirmed',this)">확정</button>
-      <button class="filter-btn" onclick="setFilter('cancelled',this)">취소</button>
-    </div>
-    <div class="admin-table-wrap">
-      <table class="admin-table">
-        <thead><tr><th>날짜</th><th>시간</th><th>이름/업체</th><th>연락처</th><th>촬영유형</th><th>인원</th><th>상태</th><th>신청일시</th><th>액션</th></tr></thead>
-        <tbody id="adminTbody"></tbody>
-      </table>
-    </div>
-    <p class="no-admin" id="noAdmin" style="display:none">해당 예약 내역이 없습니다.</p>
-  </div>
-</div>
 
 </body>
 </html>
