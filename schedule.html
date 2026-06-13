@@ -1,13 +1,16 @@
 <!DOCTYPE html>
+
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Schedule — RAWSCENE STUDIO</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, onSnapshot, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCdRQQWXRCsnFa0h3KzfxDPQ6EIXe0NO-8",
@@ -21,223 +24,552 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  const MONTHS_KO = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
-  const DOW_KO = ['일','월','화','수','목','금','토'];
+  let currentDate = new Date();
+  let allBookings = [];
 
-  function endTime(t) {
-    const [h] = t.split(':').map(Number);
-    return `${String(h+1).padStart(2,'0')}:00`;
+  const monthTitle = document.getElementById("monthTitle");
+  const calendarGrid = document.getElementById("calendarGrid");
+  const counter = document.getElementById("counter");
+  const loadingState = document.getElementById("loadingState");
+  const errorState = document.getElementById("errorState");
+
+  function getLocalDateString(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
   }
 
-  function formatDate(ds) {
-    const [y,m,d] = ds.split('-').map(Number);
-    const date = new Date(y, m-1, d);
-    const dow = DOW_KO[date.getDay()];
-    return { full: `${y}.${String(m).padStart(2,'0')}.${String(d).padStart(2,'0')}`, dow, month: MONTHS_KO[m-1], day: d, year: y };
+  function endTime(time) {
+    if (!time) return "";
+    const [h, m = "00"] = time.split(":");
+    const nextHour = String(Number(h) + 1).padStart(2, "0");
+    return `${nextHour}:${m}`;
   }
 
-  function groupByMonth(bookings) {
-    const groups = {};
-    bookings.forEach(b => {
-      const [y,m] = b.date.split('-');
-      const key = `${y}-${m}`;
-      if (!groups[key]) groups[key] = { label: `${y}년 ${parseInt(m)}월`, items: [] };
-      groups[key].items.push(b);
-    });
-    return groups;
+  function getConfirmedBookings() {
+    return allBookings.filter(b => b.status === "confirmed" && b.date);
   }
 
-  function render(bookings) {
-    const container = document.getElementById('scheduleContainer');
-    const loading = document.getElementById('loadingState');
-    const empty = document.getElementById('emptyState');
-    const counter = document.getElementById('counter');
+  function renderCalendar() {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
 
-    loading.style.display = 'none';
+    monthTitle.textContent = `${year}. ${String(month + 1).padStart(2, "0")}`;
 
-    // 오늘 이후 확정 예약만
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const todayStr = today.toISOString().split('T')[0];
-    const confirmed = bookings
-      .filter(b => b.status === 'confirmed' && b.date >= todayStr)
-      .sort((a,b) => a.date > b.date ? 1 : -1);
+    const firstDay = new Date(year, month, 1);
+    const lastDate = new Date(year, month + 1, 0).getDate();
+    const startDay = firstDay.getDay();
+
+    const todayStr = getLocalDateString(new Date());
+    const confirmed = getConfirmedBookings();
 
     counter.textContent = confirmed.length;
 
-    if (!confirmed.length) {
-      empty.style.display = 'flex';
-      container.innerHTML = '';
-      return;
+    const bookingsByDate = {};
+    confirmed.forEach(b => {
+      if (!bookingsByDate[b.date]) bookingsByDate[b.date] = [];
+      bookingsByDate[b.date].push(b);
+    });
+
+    calendarGrid.innerHTML = "";
+
+    const dayNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+    dayNames.forEach(day => {
+      const el = document.createElement("div");
+      el.className = "day-name";
+      el.textContent = day;
+      calendarGrid.appendChild(el);
+    });
+
+    for (let i = 0; i < startDay; i++) {
+      const empty = document.createElement("div");
+      empty.className = "calendar-cell empty";
+      calendarGrid.appendChild(empty);
     }
 
-    empty.style.display = 'none';
-    const groups = groupByMonth(confirmed);
+    for (let day = 1; day <= lastDate; day++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      const dayBookings = bookingsByDate[dateStr] || [];
 
-    container.innerHTML = Object.values(groups).map(group => `
-      <div class="month-group">
-        <div class="month-label">${group.label}</div>
-        <div class="booking-list">
-          ${group.items.map((b, i) => {
-            const d = formatDate(b.date);
-            return `
-            <div class="booking-item" style="animation-delay:${i * 0.06}s">
-              <div class="booking-date-col">
-                <div class="date-day">${d.day}</div>
-                <div class="date-dow">${d.dow}</div>
-              </div>
-              <div class="booking-divider"></div>
-              <div class="booking-info">
-                <div class="booking-time">${b.time} — ${endTime(b.time)}</div>
-                <div class="booking-type">${b.type || '촬영'}</div>
-              </div>
-              <div class="booking-badge">확정</div>
-            </div>`;
-          }).join('')}
+      const cell = document.createElement("div");
+      cell.className = "calendar-cell";
+
+      if (dateStr === todayStr) cell.classList.add("today");
+      if (dayBookings.length > 0) cell.classList.add("booked");
+
+      cell.innerHTML = `
+        <div class="date-number">${day}</div>
+        <div class="booking-area">
+          ${
+            dayBookings.length
+              ? dayBookings.map(b => `
+                <div class="booking-chip">
+                  ${b.time || ""}${b.time ? " - " + endTime(b.time) : ""}
+                </div>
+              `).join("")
+              : `<div class="available">예약 가능</div>`
+          }
         </div>
-      </div>
-    `).join('');
+      `;
+
+      calendarGrid.appendChild(cell);
+    }
   }
 
-  // 실시간 구독
-  const q = query(collection(db, 'bookings'), orderBy('date', 'asc'));
-  onSnapshot(q, snap => {
-    const bookings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    render(bookings);
+  document.getElementById("prevMonth").addEventListener("click", () => {
+    currentDate.setMonth(currentDate.getMonth() - 1);
+    renderCalendar();
   });
+
+  document.getElementById("nextMonth").addEventListener("click", () => {
+    currentDate.setMonth(currentDate.getMonth() + 1);
+    renderCalendar();
+  });
+
+  renderCalendar();
+
+  onSnapshot(
+    collection(db, "bookings"),
+    snapshot => {
+      allBookings = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      loadingState.style.display = "none";
+      errorState.style.display = "none";
+      renderCalendar();
+    },
+    error => {
+      console.error("예약 현황 불러오기 실패:", error);
+      loadingState.style.display = "none";
+      errorState.style.display = "block";
+    }
+  );
 </script>
+
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-:root { --black:#0a0a0a; --white:#fafaf8; --gray:#888; --border:#e0ddd8; --accent:#c8841a; }
-body { font-family:'Barlow',sans-serif; background:var(--white); color:var(--black); min-height:100vh; }
 
-/* NAV */
-nav {
-  display:flex; justify-content:space-between; align-items:center;
-  padding:20px 48px; border-bottom:0.5px solid var(--border);
-  background:rgba(250,250,248,0.97); position:sticky; top:0; z-index:100;
+:root {
+  --black:#0a0a0a;
+  --white:#fafaf8;
+  --gray:#888;
+  --light:#f4f2ee;
+  --border:#e0ddd8;
+  --accent:#c8841a;
+  --green:#9caf9b;
 }
-.logo { font-family:'Cormorant Garamond',serif; font-size:15px; font-weight:400; letter-spacing:0.18em; color:var(--black); text-decoration:none; }
-.nav-links { display:flex; gap:36px; list-style:none; }
-.nav-links a { font-size:11px; letter-spacing:0.12em; color:var(--gray); text-decoration:none; text-transform:uppercase; transition:color 0.2s; }
-.nav-links a:hover, .nav-links a.active { color:var(--black); }
-.nav-links a.active { border-bottom:1px solid var(--black); padding-bottom:2px; }
-.nav-cta { font-size:11px; letter-spacing:0.14em; text-transform:uppercase; border:0.5px solid var(--black); padding:9px 20px; color:var(--black); text-decoration:none; transition:all 0.2s; }
-.nav-cta:hover { background:var(--black); color:var(--white); }
 
-/* HERO */
+body {
+  font-family:'Barlow',sans-serif;
+  background:var(--white);
+  color:var(--black);
+  min-height:100vh;
+}
+
+nav {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:20px 48px;
+  border-bottom:0.5px solid var(--border);
+  background:rgba(250,250,248,0.97);
+  position:sticky;
+  top:0;
+  z-index:100;
+}
+
+.logo {
+  font-family:'Cormorant Garamond',serif;
+  font-size:15px;
+  letter-spacing:0.18em;
+  color:var(--black);
+  text-decoration:none;
+}
+
+.nav-links {
+  display:flex;
+  gap:36px;
+  list-style:none;
+}
+
+.nav-links a {
+  font-size:11px;
+  letter-spacing:0.12em;
+  color:var(--gray);
+  text-decoration:none;
+  text-transform:uppercase;
+}
+
+.nav-links a.active {
+  color:var(--black);
+  border-bottom:1px solid var(--black);
+  padding-bottom:2px;
+}
+
+.nav-cta {
+  font-size:11px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  border:0.5px solid var(--black);
+  padding:9px 20px;
+  color:var(--black);
+  text-decoration:none;
+}
+
 .page-hero {
   height:220px;
-  background:linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.45)),
+  background:linear-gradient(rgba(0,0,0,0.65),rgba(0,0,0,0.45)),
     url('https://images.unsplash.com/photo-1497366216548-37526070297c?w=1400&q=80') center/cover;
-  display:flex; flex-direction:column; justify-content:flex-end; padding:36px 48px;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  padding:36px 48px;
 }
-.hero-tag { font-size:10px; letter-spacing:0.22em; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-bottom:10px; }
-.hero-title { font-family:'Cormorant Garamond',serif; font-size:32px; font-weight:300; color:#fff; letter-spacing:0.1em; }
 
-/* MAIN */
-.main-wrap { max-width:900px; margin:0 auto; padding:64px 48px; }
-
-/* HEADER */
-.schedule-header {
-  display:flex; justify-content:space-between; align-items:flex-end;
-  margin-bottom:48px; padding-bottom:24px; border-bottom:0.5px solid var(--border);
+.hero-tag {
+  font-size:10px;
+  letter-spacing:0.22em;
+  color:rgba(255,255,255,0.5);
+  text-transform:uppercase;
+  margin-bottom:10px;
 }
-.schedule-header-left .label { font-size:10px; letter-spacing:0.2em; color:var(--gray); text-transform:uppercase; margin-bottom:6px; }
-.schedule-header-left h1 { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:400; letter-spacing:0.06em; }
-.counter-wrap { text-align:right; }
-.counter-num { font-family:'Cormorant Garamond',serif; font-size:42px; font-weight:300; color:var(--black); line-height:1; }
-.counter-label { font-size:10px; letter-spacing:0.14em; color:var(--gray); text-transform:uppercase; margin-top:4px; }
 
-/* NOTICE */
+.hero-title {
+  font-family:'Cormorant Garamond',serif;
+  font-size:36px;
+  font-weight:300;
+  color:#fff;
+  letter-spacing:0.12em;
+}
+
+.main-wrap {
+  max-width:1100px;
+  margin:0 auto;
+  padding:56px 48px 72px;
+}
+
+.schedule-top {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  margin-bottom:28px;
+}
+
+.label {
+  font-size:10px;
+  letter-spacing:0.2em;
+  color:var(--gray);
+  text-transform:uppercase;
+  margin-bottom:8px;
+}
+
+.schedule-top h1 {
+  font-family:'Cormorant Garamond',serif;
+  font-size:30px;
+  font-weight:400;
+  letter-spacing:0.06em;
+}
+
+.counter-wrap {
+  text-align:right;
+}
+
+.counter-num {
+  font-family:'Cormorant Garamond',serif;
+  font-size:42px;
+  line-height:1;
+}
+
+.counter-label {
+  font-size:10px;
+  letter-spacing:0.14em;
+  color:var(--gray);
+  text-transform:uppercase;
+  margin-top:4px;
+}
+
 .notice-bar {
-  background:#f7f6f2; border:0.5px solid #e8e4dc;
-  padding:14px 20px; margin-bottom:40px;
-  display:flex; align-items:center; gap:10px;
-  font-size:12px; color:#666; letter-spacing:0.03em;
-}
-.notice-dot { width:6px; height:6px; border-radius:50%; background:var(--accent); flex-shrink:0; }
-
-/* LOADING */
-#loadingState {
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  padding:80px; gap:16px;
-}
-.loading-ring {
-  width:32px; height:32px; border:1.5px solid #e0e0e0;
-  border-top-color:var(--black); border-radius:50%;
-  animation:spin 0.8s linear infinite;
-}
-@keyframes spin { to { transform:rotate(360deg); } }
-.loading-text { font-size:11px; letter-spacing:0.14em; color:var(--gray); text-transform:uppercase; }
-
-/* EMPTY */
-#emptyState {
-  display:none; flex-direction:column; align-items:center;
-  justify-content:center; padding:80px; gap:12px; text-align:center;
-}
-.empty-icon { font-size:32px; color:#ddd; margin-bottom:8px; }
-.empty-title { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:400; color:#bbb; }
-.empty-sub { font-size:12px; color:#ccc; letter-spacing:0.06em; margin-top:4px; }
-
-/* MONTH GROUP */
-.month-group { margin-bottom:48px; }
-.month-label {
-  font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--gray);
-  margin-bottom:16px; padding-bottom:10px; border-bottom:0.5px solid var(--border);
+  background:#f7f6f2;
+  border:0.5px solid #e8e4dc;
+  padding:14px 18px;
+  margin-bottom:32px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:12px;
+  color:#666;
 }
 
-/* BOOKING ITEM */
-.booking-list { display:flex; flex-direction:column; gap:0; }
-.booking-item {
-  display:flex; align-items:center; gap:0;
+.notice-dot {
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--accent);
+}
+
+.live-info {
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:10px;
+  color:#aaa;
+  letter-spacing:0.08em;
+}
+
+.live-dot {
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:#4caf50;
+  animation:pulse 2s ease infinite;
+}
+
+@keyframes pulse {
+  0%,100% { opacity:1; }
+  50% { opacity:.3; }
+}
+
+.calendar-box {
+  border:0.5px solid var(--border);
+  background:#fff;
+}
+
+.calendar-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:24px;
   border-bottom:0.5px solid var(--border);
-  padding:20px 0;
-  opacity:0; animation:fadeUp 0.4s ease forwards;
-  transition:background 0.15s;
-}
-.booking-item:hover { background:#f9f9f7; margin:0 -16px; padding:20px 16px; }
-@keyframes fadeUp {
-  from { opacity:0; transform:translateY(8px); }
-  to { opacity:1; transform:translateY(0); }
 }
 
-.booking-date-col {
-  width:64px; flex-shrink:0; text-align:center;
-}
-.date-day { font-family:'Cormorant Garamond',serif; font-size:32px; font-weight:300; line-height:1; color:var(--black); }
-.date-dow { font-size:10px; letter-spacing:0.12em; color:var(--gray); text-transform:uppercase; margin-top:3px; }
-
-.booking-divider { width:0.5px; height:40px; background:var(--border); margin:0 28px; flex-shrink:0; }
-
-.booking-info { flex:1; }
-.booking-time { font-size:15px; font-weight:400; letter-spacing:0.04em; color:var(--black); margin-bottom:5px; }
-.booking-type { font-size:11px; letter-spacing:0.1em; color:var(--gray); text-transform:uppercase; }
-
-.booking-badge {
-  font-size:9px; letter-spacing:0.12em; text-transform:uppercase;
-  border:0.5px solid var(--black); padding:4px 10px; color:var(--black);
-  flex-shrink:0;
+.month-title {
+  font-family:'Cormorant Garamond',serif;
+  font-size:30px;
+  font-weight:400;
+  letter-spacing:0.08em;
 }
 
-/* FOOTER */
+.month-btn {
+  width:42px;
+  height:42px;
+  border:0.5px solid var(--border);
+  background:#fff;
+  cursor:pointer;
+  font-size:18px;
+}
+
+.month-btn:hover {
+  background:var(--black);
+  color:#fff;
+}
+
+.calendar-grid {
+  display:grid;
+  grid-template-columns:repeat(7, 1fr);
+}
+
+.day-name {
+  padding:14px 8px;
+  text-align:center;
+  font-size:10px;
+  letter-spacing:0.12em;
+  color:#aaa;
+  border-bottom:0.5px solid var(--border);
+}
+
+.day-name:first-child { color:#c9826c; }
+.day-name:nth-child(7) { color:#6f8fb8; }
+
+.calendar-cell {
+  min-height:125px;
+  padding:12px;
+  border-right:0.5px solid var(--border);
+  border-bottom:0.5px solid var(--border);
+  position:relative;
+  background:#fff;
+}
+
+.calendar-cell:nth-child(7n) {
+  border-right:none;
+}
+
+.calendar-cell.empty {
+  background:#faf9f6;
+}
+
+.date-number {
+  font-family:'Cormorant Garamond',serif;
+  font-size:22px;
+  color:#222;
+  margin-bottom:10px;
+}
+
+.calendar-cell.today .date-number {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  background:var(--black);
+  color:#fff;
+}
+
+.calendar-cell.booked {
+  background:#fbf8f2;
+}
+
+.booking-chip {
+  display:block;
+  font-size:11px;
+  letter-spacing:0.04em;
+  padding:6px 7px;
+  margin-bottom:5px;
+  background:var(--black);
+  color:#fff;
+}
+
+.available {
+  font-size:10px;
+  color:var(--green);
+  letter-spacing:0.08em;
+}
+
+#loadingState {
+  padding:18px 0 0;
+  font-size:11px;
+  letter-spacing:0.12em;
+  color:#aaa;
+  text-transform:uppercase;
+}
+
+#errorState {
+  display:none;
+  margin-top:18px;
+  padding:16px;
+  border:0.5px solid #d8a5a5;
+  color:#9b4d4d;
+  font-size:12px;
+  background:#fff7f7;
+}
+
+.guide-box {
+  margin-top:24px;
+  padding:18px;
+  border:0.5px solid var(--border);
+  font-size:12px;
+  color:#666;
+  line-height:1.8;
+  background:#fff;
+}
+
 footer {
-  padding:28px 48px; border-top:0.5px solid var(--border);
-  display:flex; justify-content:space-between; align-items:center;
-  margin-top:40px;
+  padding:28px 48px;
+  border-top:0.5px solid var(--border);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
 }
-.footer-logo { font-family:'Cormorant Garamond',serif; font-size:13px; letter-spacing:0.16em; }
-.footer-links { display:flex; gap:28px; }
-.footer-links a { font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--gray); text-decoration:none; }
-.footer-links a:hover { color:var(--black); }
-.footer-copy { font-size:10px; color:#ccc; letter-spacing:0.04em; }
 
-/* REFRESH BTN */
-.refresh-info { font-size:10px; color:#bbb; letter-spacing:0.08em; display:flex; align-items:center; gap:6px; }
-.live-dot { width:6px; height:6px; border-radius:50%; background:#4caf50; animation:pulse 2s ease infinite; flex-shrink:0; }
-@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+.footer-logo {
+  font-family:'Cormorant Garamond',serif;
+  font-size:13px;
+  letter-spacing:0.16em;
+}
+
+.footer-links {
+  display:flex;
+  gap:28px;
+}
+
+.footer-links a {
+  font-size:10px;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--gray);
+  text-decoration:none;
+}
+
+.footer-copy {
+  font-size:10px;
+  color:#ccc;
+}
+
+@media (max-width:768px) {
+  nav {
+    padding:18px 20px;
+    flex-wrap:wrap;
+    gap:16px;
+  }
+
+  .nav-links {
+    order:3;
+    width:100%;
+    justify-content:space-between;
+    gap:0;
+  }
+
+  .nav-cta {
+    padding:8px 14px;
+  }
+
+  .page-hero {
+    height:180px;
+    padding:28px 22px;
+  }
+
+  .hero-title {
+    font-size:32px;
+  }
+
+  .main-wrap {
+    padding:42px 18px 56px;
+  }
+
+  .schedule-top {
+    align-items:flex-start;
+  }
+
+  .calendar-header {
+    padding:18px;
+  }
+
+  .month-title {
+    font-size:26px;
+  }
+
+  .calendar-cell {
+    min-height:92px;
+    padding:8px;
+  }
+
+  .date-number {
+    font-size:18px;
+  }
+
+  .booking-chip {
+    font-size:9px;
+    padding:4px;
+  }
+
+  .available {
+    display:none;
+  }
+
+  footer {
+    padding:24px 20px;
+    flex-direction:column;
+    gap:18px;
+  }
+}
 </style>
+
 </head>
+
 <body>
 
 <nav>
@@ -258,9 +590,9 @@ footer {
 
 <div class="main-wrap">
 
-  <div class="schedule-header">
-    <div class="schedule-header-left">
-      <p class="label">Confirmed Reservations</p>
+  <div class="schedule-top">
+    <div>
+      <p class="label">Monthly Calendar</p>
       <h1>예약 현황</h1>
     </div>
     <div class="counter-wrap">
@@ -272,24 +604,33 @@ footer {
   <div class="notice-bar">
     <div class="notice-dot"></div>
     확정된 예약만 표시됩니다. 대기 중인 예약은 입금 확인 후 확정됩니다.
-    <div style="margin-left:auto" class="refresh-info">
+    <div class="live-info">
       <div class="live-dot"></div>
       실시간 업데이트
     </div>
   </div>
 
-  <div id="loadingState">
-    <div class="loading-ring"></div>
-    <p class="loading-text">불러오는 중...</p>
+  <div class="calendar-box">
+    <div class="calendar-header">
+      <button class="month-btn" id="prevMonth" type="button">←</button>
+      <div class="month-title" id="monthTitle">----</div>
+      <button class="month-btn" id="nextMonth" type="button">→</button>
+    </div>
+
+```
+<div class="calendar-grid" id="calendarGrid"></div>
+```
+
   </div>
 
-  <div id="emptyState">
-    <div class="empty-icon">◎</div>
-    <p class="empty-title">예약된 일정이 없습니다</p>
-    <p class="empty-sub">확정된 예약이 생기면 여기에 표시됩니다</p>
-  </div>
+  <div id="loadingState">불러오는 중...</div>
+  <div id="errorState">예약 현황을 불러오지 못했습니다. 잠시 후 다시 확인해주세요.</div>
 
-  <div id="scheduleContainer"></div>
+  <div class="guide-box">
+    * 예약 가능 날짜는 “예약 가능”으로 표시됩니다.<br>
+    * 확정 예약이 있는 날짜에는 예약 시간이 표시됩니다.<br>
+    * 월이 바뀌면 해당 월의 날짜가 자동으로 다시 표시됩니다.
+  </div>
 
 </div>
 
