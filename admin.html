@@ -105,10 +105,12 @@
     const q = query(collection(db,'bookings'), orderBy('createdAt','desc'));
     onSnapshot(q, (snap)=>{
       bookings = snap.docs.map(d=>({id:d.id,...d.data()}));
-      renderCalendar();
-      if(selDate) renderSlots(selDate);
-      renderStatus();
+
+      // admin.html에는 캘린더/예약폼 요소가 없으므로 관리자 목록만 갱신합니다.
       if(adminLoggedIn) renderAdmin();
+    }, (error)=>{
+      console.error("Firestore 읽기 오류:", error);
+      toast('예약 데이터를 불러오지 못했습니다. Firebase 설정을 확인해 주세요.','err',7000);
     });
   }
 
@@ -419,7 +421,6 @@
   };
 
   window.addEventListener('DOMContentLoaded',()=>{
-    renderCalendar();
     startListening();
   });
 </script>
@@ -443,7 +444,7 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:18px 4
 .ndot{width:6px;height:6px;border-radius:50%;background:#e8a44a;flex-shrink:0;}
 .ndot.b{background:var(--black);}
 
-.page-hero{height:180px;background:linear-gradient(rgba(0,0,0,0.52),rgba(0,0,0,0.38)),url('https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=80') center/cover;display:flex;flex-direction:column;justify-content:flex-end;padding:28px 48px;}
+.page-hero{height:180px;background:linear-gradient(rgba(0,0,0,0.52),rgba(0,0,0,0.38)),url('images/studio-01.jpg') center/cover no-repeat;display:flex;flex-direction:column;justify-content:flex-end;padding:28px 48px;}
 .page-hero p{font-size:10px;letter-spacing:0.2em;color:rgba(255,255,255,0.5);text-transform:uppercase;margin-bottom:6px;}
 .page-hero h1{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:#fff;letter-spacing:0.1em;}
 
@@ -614,7 +615,7 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:18px 4
   </div>
   <div id="adminDash" style="display:none;" class="admin-page">
     <div class="admin-top">
-      <div><h2 class="admin-title">예약 관리</h2><p class="admin-sub">RAWSCENE STUDIO A · Firebase 실시간 연동</p></div>
+      <div><h2 class="admin-title">예약 관리</h2><p class="admin-sub">RAWSCENE STUDIO · Firebase 실시간 연동</p></div>
       <button class="logout-btn" onclick="adminLogout()">로그아웃</button>
     </div>
     <div class="admin-stats" id="adminStats"></div>
