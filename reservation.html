@@ -1,8 +1,920 @@
-<!doctype html><html lang="ko"><head><title>Reservation | RAWSCENE</title><meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="RAWSCENE STUDIO — 브랜드, 인플루언서, 제품촬영, 라이브커머스 콘텐츠를 위한 남양주 프리미엄 렌탈 스튜디오" />
-<meta property="og:title" content="RAWSCENE STUDIO" />
-<meta property="og:description" content="For Brands. Creators. Live Commerce." />
-<meta property="og:image" content="/images/studio-01.jpg" />
-<link rel="stylesheet" href="style.css" />
-<script defer src="script.js"></script></head><body><header class="site-header"><a class="logo" href="index.html">RAWSCENE</a><nav><a href="studio.html">Studio</a><a href="archive.html">Archive</a><a href="info.html">Info</a><a href="schedule.html">Schedule</a><a class="nav-cta" href="reservation.html">Reservation</a></nav><button class="menu-btn" aria-label="menu">Menu</button></header><main><section class="page-hero"><div class="eyebrow">BOOKING</div><h1>Reservation</h1><p>촬영 목적과 희망 일정을 남겨주시면 확인 후 안내드립니다.</p></section><section class="section narrow"><form class="booking" action="mailto:rawscene3190@gmail.com" method="post" enctype="text/plain"><label>이름<input name="name" required></label><label>연락처<input name="phone" required></label><label>브랜드/회사명<input name="brand"></label><label>촬영 종류<select name="type"><option>Brand</option><option>Influencer</option><option>Product</option><option>Live Commerce</option><option>Profile</option><option>Video</option></select></label><label>희망 날짜<input type="date" name="date" required></label><label>희망 시간<input name="time" placeholder="예: 13:00-16:00"></label><label>인원<input name="people" placeholder="예: 3명"></label><label>문의사항<textarea name="message" rows="6"></textarea></label><button class="btn dark" type="submit">예약 신청하기</button></form></section></main><footer class="footer"><div><h3>RAWSCENE STUDIO</h3><p>경기도 남양주시 다산순환로 20 현대프리미엄캠퍼스몰 D118</p></div><div><p>010-5788-3190</p><p>rawscene3190@gmail.com</p><p><a href="https://www.instagram.com/rawscene.studio/" target="_blank">Instagram</a></p></div></footer></body></html>
+<!DOCTYPE html>
+<html lang="ko">
+  
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reservation — RAWSCENE STUDIO</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBz_fIbeZQ1VVXiYImFnrOZElfZkYrBxc",
+    authDomain: "rawscene-studio-new.firebaseapp.com",
+    projectId: "rawscene-studio-new",
+    storageBucket: "rawscene-studio-new.firebasestorage.app",
+    messagingSenderId: "693631707823",
+    appId: "1:693631707823:web:c34b0a9a625eb36541425a"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const TIMES = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'];
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const DOW = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  // 관리자 비밀번호를 원문 그대로 노출하지 않기 위한 간단한 해시 비교입니다.
+  // 정적 사이트 특성상 완전한 보안은 아니므로, 추후 Firebase Auth 적용을 권장합니다.
+  const ADMIN_PW_HASH = "fd428df6b49b5e1d9b4922b995e19189c0cc2e54aae419910a94848152a48a86";
+
+  async function sha256(text) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(text);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  // 예약 가능 기간: 오늘부터 3개월
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const maxDate = new Date(today);
+  maxDate.setMonth(maxDate.getMonth() + 3);
+
+  let bookings = [];
+  let selDate = null, selStartTime = null, selEndTime = null;
+  let curYear = today.getFullYear(), curMonth = today.getMonth();
+  let adminLoggedIn = false, adminFilter = 'all';
+
+  function toDS(y,m,d){ return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+  function todayStr(){ return toDS(today.getFullYear(),today.getMonth(),today.getDate()); }
+  function maxDateStr(){ return toDS(maxDate.getFullYear(),maxDate.getMonth(),maxDate.getDate()); }
+  function timeToNum(t){ return parseInt(t.replace(':','')); }
+
+  // 해당 날짜에 예약된 시간 범위들 가져오기
+  function getBookedRanges(ds){
+    return bookings.filter(b=>b.date===ds&&b.status!=='cancelled').map(b=>({start:b.startTime||b.time, end:b.endTime||b.time}));
+  }
+
+  // 특정 시간이 예약된 범위와 겹치는지 확인
+  function isTimeBooked(ds, t){
+    const tNum = timeToNum(t);
+    return getBookedRanges(ds).some(r => {
+      const s = timeToNum(r.start), e = timeToNum(r.end);
+      return tNum >= s && tNum < e;
+    });
+  }
+
+  // 선택한 시작~종료 범위가 기존 예약과 겹치는지 확인
+  function hasConflict(ds, startT, endT){
+    const s = timeToNum(startT), e = timeToNum(endT);
+    return getBookedRanges(ds).some(r => {
+      const rs = timeToNum(r.start), re = timeToNum(r.end);
+      return s < re && e > rs;
+    });
+  }
+
+  // 캘린더 상태: 해당 날짜가 완전히 마감됐는지
+  function isDayFull(ds){
+    // 연속 예약 가능한 최소 1시간 블록이 있으면 마감 아님
+    return TIMES.every(t => isTimeBooked(ds, t));
+  }
+
+  function isDayPartial(ds){
+    const ranges = getBookedRanges(ds);
+    return ranges.length > 0 && !isDayFull(ds);
+  }
+
+  function fmtDt(iso){ const d=new Date(iso); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+
+  let toastTimer;
+  function toast(msg,type='',dur=3500){
+    const el=document.getElementById('toast');
+    el.textContent=msg; el.className='toast show'+(type?' '+type:'');
+    clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.className='toast',dur);
+  }
+  function setLock(v){
+    document.getElementById('lock').classList.toggle('show',v);
+    const btn=document.getElementById('submitBtn');
+    if(btn){btn.disabled=v; document.getElementById('btnTxt').textContent=v?'처리 중...':'예약 신청하기';}
+  }
+
+  // ── Firestore 실시간 구독 ──
+  function startListening(){
+    const q = query(collection(db,'bookings'), orderBy('createdAt','desc'));
+    onSnapshot(q, (snap)=>{
+      bookings = snap.docs.map(d=>({id:d.id,...d.data()}));
+      renderCalendar();
+      if(selDate) renderSlots(selDate);
+      renderStatus();
+      if(adminLoggedIn) renderAdmin();
+    });
+  }
+
+  function renderCalendar(){
+    document.getElementById('calMonth').textContent=`${MONTHS[curMonth]} ${curYear}`;
+    const grid=document.getElementById('calGrid'); grid.innerHTML='';
+    DOW.forEach(d=>{const el=document.createElement('div');el.className='cal-dow';el.textContent=d;grid.appendChild(el);});
+    const firstDow=new Date(curYear,curMonth,1).getDay();
+    const dim=new Date(curYear,curMonth+1,0).getDate();
+    const todS=todayStr();
+    const maxS=maxDateStr();
+    for(let i=0;i<firstDow;i++){const e=document.createElement('div');e.className='cal-day empty';grid.appendChild(e);}
+    for(let d=1;d<=dim;d++){
+      const ds=toDS(curYear,curMonth,d);
+      const isPast = ds < todS;
+      const isFuture = ds > maxS;
+      const isFull = !isPast && !isFuture && isDayFull(ds);
+      const isPartial = !isPast && !isFuture && isDayPartial(ds);
+      const el=document.createElement('div'); el.textContent=d;
+      if(isPast || isFuture) el.className='cal-day past';
+      else if(isFull) el.className='cal-day full';
+      else{ el.className='cal-day'+(isPartial?' partial':''); el.onclick=()=>pickDate(ds); }
+      if(ds===selDate) el.classList.add('selected');
+      if(ds===todS&&ds!==selDate) el.classList.add('today');
+      grid.appendChild(el);
+    }
+  }
+
+  window.changeMonth=function(dir){
+    curMonth+=dir; if(curMonth>11){curMonth=0;curYear++;} if(curMonth<0){curMonth=11;curYear--;}
+    renderCalendar();
+  };
+
+  function pickDate(ds){
+    selDate=ds; selStartTime=null; selEndTime=null;
+    renderCalendar(); renderSlots(ds); updateSelInfo();
+  }
+
+  function renderSlots(ds){
+    document.getElementById('slotsWrap').style.display='block';
+    const[y,m,d]=ds.split('-');
+    document.getElementById('slotsDateTxt').textContent=`${y}년 ${parseInt(m)}월 ${parseInt(d)}일`;
+    const grid=document.getElementById('slotsGrid'); grid.innerHTML='';
+
+    // 안내 레이블 업데이트
+    const label = document.getElementById('slotsLabel');
+    if(label){
+      if(!selStartTime) label.textContent='시작 시간 선택';
+      else if(!selEndTime) label.textContent='종료 시간 선택';
+      else label.textContent='시간 선택 완료';
+    }
+
+    TIMES.forEach((t, idx)=>{
+      const btn=document.createElement('button');
+      const booked = isTimeBooked(ds, t);
+
+      // 종료 시간 선택 단계에서 시작 시간 이전 및 중간 예약된 슬롯 처리
+      let disabled = booked;
+      let cls = 'slot';
+
+      if(booked){
+        cls += ' taken';
+        disabled = true;
+      } else if(selStartTime){
+        const tNum = timeToNum(t);
+        const sNum = timeToNum(selStartTime);
+        // 시작시간만 선택된 상태에서는 이전 시간도 다시 시작시간으로 선택 가능하게 둡니다.
+        if(tNum <= sNum) {
+          disabled = false;
+        }
+        // 시작~현재 사이에 예약된 슬롯이 있으면 그 이후만 선택 불가
+        else {
+          let blocked = false;
+          for(let i=TIMES.indexOf(selStartTime)+1; i<idx; i++){
+            if(isTimeBooked(ds, TIMES[i])){ blocked=true; break; }
+          }
+          if(blocked){ cls += ' past-start'; disabled=true; }
+        }
+      }
+
+      // 선택 상태 표시
+      if(t === selStartTime) cls += ' start-sel';
+      if(t === selEndTime) cls += ' end-sel';
+
+      // 선택 범위 내 하이라이트
+      if(selStartTime && selEndTime){
+        const tNum = timeToNum(t);
+        const s = timeToNum(selStartTime), e = timeToNum(selEndTime);
+        if(tNum >= s && tNum < e) cls += ' in-range';
+      }
+
+      btn.className = cls;
+      btn.disabled = disabled;
+
+      if(booked){
+        btn.innerHTML=`${t}<span class="sx">예약됨</span>`;
+      } else if(disabled){
+        btn.textContent=t;
+      } else {
+        btn.textContent=t;
+        btn.onclick=()=>pickTime(t);
+      }
+      grid.appendChild(btn);
+    });
+  }
+
+  function pickTime(t){
+    // 첫 클릭: 시작 시간 선택
+    if(!selStartTime){
+      selStartTime = t;
+      selEndTime = null;
+    }
+
+    // 시작 시간만 선택된 상태
+    else if(selStartTime && !selEndTime){
+      if(timeToNum(t) > timeToNum(selStartTime)){
+        // 시작보다 뒤 시간을 누르면 종료 시간
+        selEndTime = t;
+      } else {
+        // 시작보다 같거나 앞 시간을 누르면 시작 시간 재선택
+        selStartTime = t;
+        selEndTime = null;
+      }
+    }
+
+    // 시작/종료가 모두 선택된 상태에서는 새 시작 시간으로 다시 선택
+    else{
+      selStartTime = t;
+      selEndTime = null;
+    }
+
+    renderSlots(selDate);
+    updateSelInfo();
+  }
+
+
+  function updateSelInfo(){
+    const el=document.getElementById('selInfo');
+    if(!selDate){el.textContent='날짜와 시간을 먼저 선택해 주세요.';el.className='sel-info empty';return;}
+    const[y,m,d]=selDate.split('-');
+    if(!selStartTime){
+      el.innerHTML=`<strong>날짜:</strong> ${y}년 ${parseInt(m)}월 ${parseInt(d)}일 &nbsp;|&nbsp; <span style="color:#e8a44a">시작 시간을 선택해 주세요</span>`;
+      el.className='sel-info'; return;
+    }
+    if(!selEndTime){
+      el.innerHTML=`<strong>날짜:</strong> ${y}년 ${parseInt(m)}월 ${parseInt(d)}일 &nbsp;|&nbsp; <strong>시작:</strong> ${selStartTime} &nbsp;|&nbsp; <span style="color:#e8a44a">종료 시간을 선택해 주세요</span>`;
+      el.className='sel-info'; return;
+    }
+    // 시간 계산
+    const startH = parseInt(selStartTime), endH = parseInt(selEndTime);
+    const duration = timeToNum(selEndTime)/100 - timeToNum(selStartTime)/100;
+    const estimated = getEstimatedPrice();
+    el.innerHTML=`<strong>스튜디오:</strong> RAWSCENE STUDIO &nbsp;|&nbsp; <strong>날짜:</strong> ${y}년 ${parseInt(m)}월 ${parseInt(d)}일 &nbsp;|&nbsp; <strong>시간:</strong> ${selStartTime} – ${selEndTime} <span style="color:var(--gray);font-size:11px">(${duration}시간)</span><br><strong>예상 이용료:</strong> ${formatWon(estimated)} <span style="color:var(--gray);font-size:11px">(3인 기준 / 초과 1인당 시간당 5,000원 추가)</span>`;
+    el.className='sel-info';
+  }
+
+  window.submitReservation=async function(){
+    if(!selDate||!selStartTime||!selEndTime){toast('날짜와 시작/종료 시간을 모두 선택해 주세요.','err');return;}
+    const name=document.getElementById('fName').value.trim();
+    const phone=document.getElementById('fPhone').value.trim();
+    const type=document.getElementById('fType').value;
+    if(!name){toast('이름 / 업체명을 입력해 주세요.','err');return;}
+    if(!phone){toast('연락처를 입력해 주세요.','err');return;}
+    if(!type){toast('촬영 유형을 선택해 주세요.','err');return;}
+
+    // 동의 체크 확인
+    if(!document.getElementById('agreePrivacy').checked){
+      toast('개인정보 수집 및 이용에 동의해 주세요.','err'); return;
+    }
+    if(!document.getElementById('agreeTerms').checked){
+      toast('예약 시 주의사항에 동의해 주세요.','err'); return;
+    }
+
+    // 중복 확인
+    if(hasConflict(selDate, selStartTime, selEndTime)){
+      toast('선택한 시간대에 이미 예약이 있습니다. 다른 시간을 선택해 주세요.','err',5000);
+      return;
+    }
+
+    setLock(true);
+    try{
+      await addDoc(collection(db,'bookings'),{
+        date:selDate,
+        time:selStartTime,       // 하위 호환성
+        startTime:selStartTime,
+        endTime:selEndTime,
+        name, phone,
+        email:document.getElementById('fEmail').value.trim(),
+        type,
+        people:document.getElementById('fPeople').value,
+        estimatedPrice:getEstimatedPrice(),
+        priceRule:'1시간 30,000원 / 최소 2시간 / 3인 기준 / 4인부터 1인당 시간당 5,000원 추가',
+        note:document.getElementById('fNote').value.trim(),
+        status:'pending', createdAt:new Date().toISOString()
+      });
+      selDate=null; selStartTime=null; selEndTime=null;
+      ['fName','fPhone','fEmail','fNote'].forEach(id=>document.getElementById(id).value='');
+      document.getElementById('fType').value='';
+      document.getElementById('agreePrivacy').checked=false;
+      document.getElementById('agreeTerms').checked=false;
+      document.getElementById('slotsWrap').style.display='none';
+      updateSelInfo();
+      setLock(false);
+      toast('예약 신청이 접수되었습니다. 현재는 대기 상태이며, 입금 확인 후 예약이 확정됩니다.','ok',7000);
+    }catch(e){
+      console.error("예약 저장 오류:", e);
+      setLock(false);
+      toast(e.message || '오류가 발생했습니다. 다시 시도해 주세요.','err',10000);
+    }
+  };
+
+  function getDurationHours() {
+    if (!selStartTime || !selEndTime) return 0;
+    return timeToNum(selEndTime) / 100 - timeToNum(selStartTime) / 100;
+  }
+
+  function getPeopleCount() {
+    const raw = document.getElementById('fPeople')?.value || '3명';
+    const n = parseInt(raw.replace(/[^0-9]/g, ''), 10);
+    return Number.isFinite(n) ? n : 3;
+  }
+
+  function getEstimatedPrice() {
+    const duration = getDurationHours();
+    const people = getPeopleCount();
+    const base = duration * 30000;
+    const extraPeople = Math.max(0, people - 3);
+    const extra = duration * extraPeople * 5000;
+    return base + extra;
+  }
+
+  function formatWon(n) {
+    return n.toLocaleString('ko-KR') + '원';
+  }
+
+  function getTimeDisplay(b){
+    if(b.startTime && b.endTime) return `${b.startTime} – ${b.endTime}`;
+    return b.time || '';
+  }
+
+  function renderStatus(){
+    const grid=document.getElementById('bkGrid');
+    const active=bookings.filter(b=>b.status!=='cancelled');
+    if(!active.length){grid.innerHTML='<p class="no-bk">아직 예약 내역이 없습니다.</p>';return;}
+    const show=active.slice(0,9);
+    grid.innerHTML=show.map(b=>`
+      <div class="bk-card ${b.status}">
+        <p class="bk-date">${b.date}</p>
+        <p class="bk-time">${getTimeDisplay(b)}</p>
+        <p class="bk-name">${b.name}</p>
+        <div class="bk-tags">
+          <span class="bk-tag">${b.type||'촬영'}</span>
+          <span class="bk-tag ${b.status}">${b.status==='confirmed'?'확정':'대기중'}</span>
+        </div>
+      </div>`).join('');
+  }
+
+  // ── ADMIN ──
+  window.showPage=function(p){
+    document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+    document.querySelectorAll('.nav-links a').forEach(el=>el.classList.remove('active'));
+    document.getElementById('page-'+p).classList.add('active');
+    document.getElementById('nav-'+p).classList.add('active');
+  };
+
+  window.adminLogin=async function(){
+    const pw=document.getElementById('adminPw').value;
+    const hash = await sha256(pw);
+
+    if(hash===ADMIN_PW_HASH){
+      adminLoggedIn=true;
+      document.getElementById('loginBox').style.display='none';
+      document.getElementById('adminDash').style.display='block';
+      renderAdmin();
+    } else {
+      document.getElementById('loginErr').style.display='block';
+      document.getElementById('adminPw').value='';
+    }
+  };
+
+  window.adminLogout=function(){
+    adminLoggedIn=false;
+    document.getElementById('loginBox').style.display='block';
+    document.getElementById('adminDash').style.display='none';
+    document.getElementById('adminPw').value='';
+    document.getElementById('loginErr').style.display='none';
+  };
+
+  window.setFilter=function(f,btn){
+    adminFilter=f;
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    renderAdmin();
+  };
+
+  function renderAdmin(){
+    const total=bookings.length;
+    const pending=bookings.filter(b=>b.status==='pending').length;
+    const confirmed=bookings.filter(b=>b.status==='confirmed').length;
+    const cancelled=bookings.filter(b=>b.status==='cancelled').length;
+    document.getElementById('adminStats').innerHTML=`
+      <div class="stat-card"><p class="stat-num">${total}</p><p class="stat-lbl">전체</p></div>
+      <div class="stat-card"><p class="stat-num" style="color:#c8841a">${pending}</p><p class="stat-lbl">대기중</p></div>
+      <div class="stat-card"><p class="stat-num">${confirmed}</p><p class="stat-lbl">확정</p></div>
+      <div class="stat-card"><p class="stat-num" style="color:#bbb">${cancelled}</p><p class="stat-lbl">취소</p></div>`;
+    let filtered=adminFilter==='all'?[...bookings]:bookings.filter(b=>b.status===adminFilter);
+    filtered.sort((a,b)=>a.date>b.date?1:-1);
+    const tbody=document.getElementById('adminTbody');
+    const noAdm=document.getElementById('noAdmin');
+    if(!filtered.length){tbody.innerHTML='';noAdm.style.display='block';return;}
+    noAdm.style.display='none';
+    tbody.innerHTML=filtered.map(b=>`
+      <tr>
+        <td>${b.date}</td>
+        <td>${getTimeDisplay(b)}</td>
+        <td style="font-weight:500">${b.name}</td>
+        <td>${b.phone}</td>
+        <td>${b.type||'—'}</td>
+        <td>${b.people||'—'}</td>
+        <td><span class="status-badge ${b.status}">${b.status==='pending'?'대기중':b.status==='confirmed'?'확정':'취소'}</span></td>
+        <td style="color:#aaa;font-size:11px">${fmtDt(b.createdAt)}</td>
+        <td>
+          <div class="action-btns">
+            ${b.status!=='confirmed'?`<button class="act-btn confirm" onclick="changeStatus('${b.id}','confirmed')">확정</button>`:''}
+            ${b.status!=='cancelled'?`<button class="act-btn cancel" onclick="changeStatus('${b.id}','cancelled')">취소</button>`:''}
+            <button class="act-btn delete" onclick="deleteBooking('${b.id}')">삭제</button>
+          </div>
+        </td>
+      </tr>`).join('');
+  }
+
+  window.changeStatus=async function(id,newStatus){
+    try{
+      await updateDoc(doc(db,'bookings',id),{status:newStatus});
+      toast(newStatus==='confirmed'?'예약이 확정되었습니다.':'예약이 취소되었습니다.',newStatus==='confirmed'?'ok':'err',2500);
+    }catch(e){toast('오류가 발생했습니다.','err');}
+  };
+
+  window.deleteBooking=async function(id){
+    if(!confirm('이 예약을 완전히 삭제하시겠습니까?'))return;
+    try{
+      await deleteDoc(doc(db,'bookings',id));
+      toast('예약이 삭제되었습니다.');
+    }catch(e){toast('삭제 중 오류가 발생했습니다.','err');}
+  };
+
+  window.addEventListener('DOMContentLoaded',()=>{
+    renderCalendar();
+    startListening();
+
+    const peopleSelect = document.getElementById('fPeople');
+    if (peopleSelect) {
+      peopleSelect.addEventListener('change', updateSelInfo);
+    }
+  });
+</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--black:#0a0a0a;--white:#fafaf8;--gray:#888;--border:#e0ddd8;}
+body{font-family:'Barlow',sans-serif;background:var(--white);color:var(--black);}
+
+nav{display:flex;justify-content:space-between;align-items:center;padding:18px 48px;border-bottom:0.5px solid var(--border);background:var(--white);}
+.logo{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:400;letter-spacing:0.18em;}
+.nav-links{display:flex;gap:32px;list-style:none;}
+.nav-links a{font-size:11px;letter-spacing:0.1em;color:var(--gray);text-decoration:none;text-transform:uppercase;cursor:pointer;}
+.nav-links a:hover,.nav-links a.active{color:var(--black);}
+.nav-links a.active{border-bottom:1px solid var(--black);padding-bottom:2px;}
+
+.page{display:none;}
+.page.active{display:block;}
+
+.notice-banner{background:#f7f6f2;border-bottom:0.5px solid #e8e4dc;padding:13px 48px;display:flex;gap:36px;flex-wrap:wrap;}
+.notice-item{display:flex;align-items:center;gap:8px;font-size:11px;color:#666;letter-spacing:0.03em;}
+.ndot{width:6px;height:6px;border-radius:50%;background:#e8a44a;flex-shrink:0;}
+.ndot.b{background:var(--black);}
+
+.page-hero{height:180px;background:linear-gradient(rgba(0,0,0,0.38),rgba(0,0,0,0.48)),url('images/studio-01.jpg') center/cover no-repeat;display:flex;flex-direction:column;justify-content:flex-end;padding:28px 48px;}
+.page-hero p{font-size:10px;letter-spacing:0.2em;color:rgba(255,255,255,0.5);text-transform:uppercase;margin-bottom:6px;}
+.page-hero h1{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:#fff;letter-spacing:0.1em;}
+
+.main{display:grid;grid-template-columns:1fr 1fr;}
+
+.cal-panel{padding:36px 40px;border-right:0.5px solid var(--border);}
+.panel-label{font-size:10px;letter-spacing:0.18em;color:var(--gray);text-transform:uppercase;margin-bottom:4px;}
+.panel-title{font-size:16px;font-weight:400;letter-spacing:0.05em;margin-bottom:20px;}
+.cal-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.cal-nav button{background:none;border:0.5px solid var(--border);padding:5px 12px;font-size:11px;cursor:pointer;color:var(--gray);transition:all 0.15s;}
+.cal-nav button:hover{background:var(--black);color:#fff;border-color:var(--black);}
+.cal-month{font-size:13px;font-weight:500;letter-spacing:0.08em;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-dow{font-size:9px;letter-spacing:0.1em;color:#bbb;text-align:center;padding:4px 0;text-transform:uppercase;}
+.cal-day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;border:0.5px solid transparent;cursor:pointer;position:relative;transition:all 0.12s;user-select:none;}
+.cal-day:hover:not(.empty):not(.past):not(.full){border-color:var(--black);background:#f5f5f0;}
+.cal-day.empty,.cal-day.past{cursor:default;color:#ccc;}
+.cal-day.today{border-color:#aaa;}
+.cal-day.selected{background:var(--black)!important;color:#fff!important;border-color:var(--black)!important;}
+.cal-day.full{background:#f5f5f3;color:#bbb;cursor:not-allowed;}
+.cal-day.full::after{content:'';width:5px;height:5px;background:#bbb;border-radius:50%;position:absolute;bottom:3px;}
+.cal-day.partial{background:#fffaf3;}
+.cal-day.partial::after{content:'';width:5px;height:5px;background:#e8a44a;border-radius:50%;position:absolute;bottom:3px;}
+.legend{display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--gray);}
+.leg-dot{width:7px;height:7px;border-radius:50%;}
+
+/* SLOTS */
+.slots-wrap{margin-top:20px;display:none;}
+.slots-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.slots-label{font-size:10px;letter-spacing:0.12em;color:var(--gray);text-transform:uppercase;}
+.slots-date{font-size:12px;font-weight:500;}
+.slots-guide{font-size:11px;color:#999;margin-bottom:10px;letter-spacing:0.02em;line-height:1.6;}
+.slots-guide strong{color:var(--black);font-weight:500;}
+.slots-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;}
+.slot{padding:9px 4px;font-size:11px;border:0.5px solid var(--border);background:#fff;cursor:pointer;color:#555;transition:all 0.12s;text-align:center;font-family:inherit;line-height:1.3;}
+.slot:hover:not(.taken):not(.past-start){border-color:var(--black);color:var(--black);}
+.slot.taken{background:#f5f5f3;color:#ccc;cursor:not-allowed;}
+.slot.taken .sx{display:block;font-size:9px;color:#ccc;}
+.slot.past-start{background:#f9f9f9;color:#ccc;cursor:not-allowed;}
+/* 시작 시간 선택 */
+.slot.start-sel{background:var(--black)!important;color:#fff!important;border-color:var(--black)!important;}
+/* 종료 시간 선택 */
+.slot.end-sel{background:#444!important;color:#fff!important;border-color:#444!important;}
+/* 선택 범위 내 */
+.slot.in-range{background:#f0f0ee;color:var(--black);border-color:#bbb;}
+
+/* FORM */
+.form-panel{padding:36px 40px;}
+.price-guide-box{border:0.5px solid var(--border);padding:13px 15px;margin-bottom:14px;background:#fff;font-size:12px;color:#555;line-height:1.75;}
+.price-guide-title{font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--black);margin-bottom:5px;font-weight:500;}
+.sel-info{border:0.5px solid var(--border);padding:12px 15px;margin-bottom:16px;font-size:12px;color:#555;line-height:1.85;background:#fafaf8;}
+.sel-info.empty{color:#bbb;font-style:italic;background:#fff;}
+.sel-info strong{color:var(--black);font-weight:500;}
+.fg{margin-bottom:14px;}
+.fl{font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--gray);margin-bottom:6px;display:block;}
+.fi,.fs,.ft{width:100%;padding:10px 12px;border:0.5px solid var(--border);background:#fff;font-size:13px;font-family:inherit;color:var(--black);outline:none;transition:border-color 0.15s;border-radius:0;-webkit-appearance:none;}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--black);}
+.ft{resize:vertical;min-height:64px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.submit-btn{width:100%;padding:14px;background:var(--black);color:#fff;border:none;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;cursor:pointer;font-family:inherit;transition:background 0.2s;display:flex;align-items:center;justify-content:center;}
+.submit-btn:hover:not(:disabled){background:#333;}
+.submit-btn:disabled{background:#bbb;cursor:not-allowed;}
+.form-notice{font-size:11px;color:var(--gray);line-height:1.85;margin-top:12px;}
+.form-notice strong{color:#555;font-weight:500;}
+
+.status-section{padding:36px 48px;border-top:0.5px solid var(--border);}
+.status-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.status-header h2{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;letter-spacing:0.05em;}
+.bk-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.bk-card{border:0.5px solid #e8e8e5;padding:14px 15px;font-size:12px;border-left-width:2.5px;}
+.bk-card.confirmed{border-left-color:var(--black);}
+.bk-card.pending{border-left-color:#e8a44a;}
+.bk-date{font-size:10px;letter-spacing:0.1em;color:var(--gray);margin-bottom:4px;text-transform:uppercase;}
+.bk-time{font-size:13px;font-weight:500;margin-bottom:3px;}
+.bk-name{font-size:12px;color:#666;margin-bottom:8px;}
+.bk-tags{display:flex;gap:5px;flex-wrap:wrap;}
+.bk-tag{font-size:9px;letter-spacing:0.07em;border:0.5px solid var(--border);padding:2px 7px;color:var(--gray);text-transform:uppercase;}
+.bk-tag.confirmed{border-color:var(--black);color:var(--black);}
+.bk-tag.pending{border-color:#e8a44a;color:#c8841a;}
+.no-bk{font-size:13px;color:#bbb;text-align:center;padding:36px;grid-column:1/-1;}
+
+.admin-page{padding:40px 48px;}
+.admin-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;flex-wrap:wrap;gap:12px;}
+.admin-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:400;letter-spacing:0.06em;margin-bottom:4px;}
+.admin-sub{font-size:12px;color:var(--gray);}
+.login-box{max-width:360px;margin:80px auto;border:0.5px solid var(--border);padding:40px;}
+.login-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:400;letter-spacing:0.1em;margin-bottom:24px;text-align:center;}
+.login-err{font-size:11px;color:#c0392b;margin-top:8px;display:none;}
+.login-btn{width:100%;padding:12px;background:var(--black);color:#fff;border:none;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;font-family:inherit;margin-top:16px;}
+.admin-filters{display:flex;gap:8px;margin-bottom:20px;}
+.filter-btn{padding:7px 16px;border:0.5px solid var(--border);background:#fff;font-size:11px;letter-spacing:0.08em;cursor:pointer;color:var(--gray);text-transform:uppercase;font-family:inherit;}
+.filter-btn.on{background:var(--black);color:#fff;border-color:var(--black);}
+.admin-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px;}
+.stat-card{padding:16px;background:#f7f6f2;border:0.5px solid #f0ede5;}
+.stat-num{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:400;margin-bottom:3px;}
+.stat-lbl{font-size:10px;letter-spacing:0.1em;color:var(--gray);text-transform:uppercase;}
+.admin-table-wrap{overflow-x:auto;}
+.admin-table{width:100%;border-collapse:collapse;font-size:12px;}
+.admin-table th{font-size:10px;letter-spacing:0.12em;color:var(--gray);text-transform:uppercase;padding:10px 14px;border-bottom:0.5px solid var(--border);text-align:left;font-weight:400;white-space:nowrap;}
+.admin-table td{padding:12px 14px;border-bottom:0.5px solid #f0f0ee;vertical-align:middle;}
+.admin-table tr:hover td{background:#fafaf8;}
+.status-badge{display:inline-block;font-size:9px;letter-spacing:0.08em;padding:3px 9px;border:0.5px solid;text-transform:uppercase;}
+.status-badge.pending{border-color:#e8a44a;color:#c8841a;background:#fffaf3;}
+.status-badge.confirmed{border-color:var(--black);color:var(--black);background:#f5f5f3;}
+.status-badge.cancelled{border-color:#ccc;color:#bbb;background:#fafafa;}
+.action-btns{display:flex;gap:6px;}
+.act-btn{padding:5px 12px;font-size:10px;letter-spacing:0.08em;border:0.5px solid;cursor:pointer;text-transform:uppercase;font-family:inherit;transition:all 0.15s;white-space:nowrap;}
+.act-btn.confirm{border-color:var(--black);color:var(--black);background:#fff;}
+.act-btn.confirm:hover{background:var(--black);color:#fff;}
+.act-btn.cancel{border-color:#ddd;color:#bbb;background:#fff;}
+.act-btn.cancel:hover{border-color:#c0392b;color:#c0392b;}
+.act-btn.delete{border-color:#eee;color:#ddd;background:#fff;}
+.act-btn.delete:hover{border-color:#c0392b;color:#c0392b;}
+.logout-btn{background:none;border:0.5px solid var(--border);padding:7px 16px;font-size:10px;letter-spacing:0.1em;cursor:pointer;color:var(--gray);text-transform:uppercase;}
+.no-admin{font-size:13px;color:#bbb;text-align:center;padding:40px;}
+
+/* 동의란 */
+.agree-box{border:0.5px solid var(--border);margin-bottom:14px;background:#fff;}
+.agree-title{font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;padding:12px 15px;border-bottom:0.5px solid var(--border);background:#fafaf8;color:var(--black);}
+.agree-content{padding:14px 15px;font-size:11px;color:#666;line-height:1.85;letter-spacing:0.02em;max-height:180px;overflow-y:auto;}
+.agree-check{display:flex;align-items:center;gap:8px;padding:12px 15px;border-top:0.5px solid var(--border);font-size:12px;color:var(--black);cursor:pointer;background:#f9f9f8;}
+.agree-check input[type=checkbox]{width:14px;height:14px;accent-color:var(--black);cursor:pointer;flex-shrink:0;}
+.agree-check span{letter-spacing:0.02em;}
+.terms-list{padding-left:16px;margin:0;}
+.terms-list li{margin-bottom:6px;font-size:11px;color:#666;line-height:1.75;}
+.cancel-policy{margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border);}
+.cancel-title{font-size:11px;font-weight:500;letter-spacing:0.08em;color:var(--black);margin-bottom:6px;}
+.cancel-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid #f0f0ee;font-size:11px;}
+.cancel-row-last{border-bottom:none;}
+.cancel-day{color:#555;font-weight:500;letter-spacing:0.02em;}
+.cancel-desc{color:#888;text-align:right;}
+
+.toast{position:fixed;bottom:20px;right:20px;z-index:9999;background:var(--black);color:#fff;padding:12px 20px;font-size:12px;letter-spacing:0.06em;max-width:300px;line-height:1.5;opacity:0;transition:opacity 0.25s;pointer-events:none;}
+.toast.show{opacity:1;}
+.toast.err{background:#c0392b;}
+.toast.ok{background:#1a7a4a;}
+.lock{position:fixed;inset:0;background:rgba(255,255,255,0.78);display:none;align-items:center;justify-content:center;z-index:500;flex-direction:column;gap:10px;font-size:11px;letter-spacing:0.12em;color:var(--gray);text-transform:uppercase;}
+.lock.show{display:flex;}
+.lock-sp{width:18px;height:18px;border:1.5px solid #ddd;border-top-color:var(--black);border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ===== MOBILE FIX : reservation page ===== */
+@media (max-width: 768px){
+  html, body{
+    width:100% !important;
+    overflow-x:hidden !important;
+  }
+
+  nav{
+    position:relative !important;
+    display:flex !important;
+    padding:16px 18px !important;
+    gap:22px !important;
+    overflow-x:auto !important;
+    white-space:nowrap !important;
+  }
+
+  .logo{
+    font-size:14px !important;
+    flex-shrink:0 !important;
+  }
+
+  .nav-links{
+    gap:24px !important;
+    flex-shrink:0 !important;
+  }
+
+  .notice-banner{
+    padding:16px 22px !important;
+    display:block !important;
+  }
+
+  .notice-item{
+    margin-bottom:12px !important;
+    font-size:12px !important;
+    line-height:1.7 !important;
+  }
+
+  .page-hero{
+    height:240px !important;
+    padding:28px 22px !important;
+    background-position:center !important;
+  }
+
+  .page-hero h1{
+    font-size:32px !important;
+    line-height:1.1 !important;
+    letter-spacing:.08em !important;
+  }
+
+  .main{
+    display:block !important;
+    width:100% !important;
+  }
+
+  .cal-panel,
+  .form-panel{
+    width:100% !important;
+    max-width:100% !important;
+    padding:34px 22px !important;
+    border-right:none !important;
+    border-bottom:.5px solid var(--border) !important;
+  }
+
+  .cal-grid{
+    width:100% !important;
+    grid-template-columns:repeat(7,1fr) !important;
+    gap:3px !important;
+  }
+
+  .cal-day{
+    min-height:44px !important;
+    font-size:12px !important;
+  }
+
+  .slots-grid{
+    grid-template-columns:repeat(3,1fr) !important;
+    gap:6px !important;
+  }
+
+  .slot{
+    padding:12px 4px !important;
+    font-size:12px !important;
+  }
+
+  .frow{
+    display:block !important;
+  }
+
+  .fi,
+  .fs,
+  .ft,
+  .submit-btn{
+    width:100% !important;
+    max-width:100% !important;
+    font-size:16px !important;
+  }
+
+  .agree-content{
+    max-height:220px !important;
+    overflow-y:auto !important;
+    font-size:12px !important;
+    line-height:1.85 !important;
+  }
+
+  .agree-check{
+    align-items:flex-start !important;
+    font-size:13px !important;
+    line-height:1.55 !important;
+  }
+
+  .agree-check input[type=checkbox]{
+    width:18px !important;
+    height:18px !important;
+    margin-top:2px !important;
+  }
+
+  .status-section{
+    padding:44px 22px !important;
+  }
+
+  .bk-grid{
+    display:block !important;
+  }
+
+  .bk-card{
+    margin-bottom:10px !important;
+  }
+}
+
+</style>
+</head>
+<body>
+
+<div class="lock" id="lock"><div class="lock-sp"></div>처리 중...</div>
+<div class="toast" id="toast"></div>
+
+<nav>
+  <a href="index.html" class="logo">RAWSCENE STUDIO</a>
+  <ul class="nav-links">
+    <li><a href="index.html">Studio</a></li>
+    <li><a href="reservation.html" class="active">Reservation</a></li>
+    <li><a href="admin.html">Admin</a></li>
+  </ul>
+</nav>
+
+<!-- ══ 예약 페이지 ══ -->
+<div class="page active" id="page-res">
+  <div class="notice-banner">
+    <div class="notice-item"><div class="ndot"></div>예약 신청 직후에는 <strong style="color:var(--black);margin:0 3px">대기 상태</strong>로 접수됩니다.</div>
+    <div class="notice-item"><div class="ndot b"></div>입금 순서로 결정되며 입금 확인 시 예약이 확정됩니다.</div>
+  </div>
+  <div class="page-hero">
+    <p>Rawscene Studio · Namyangju</p>
+    <h1><strong>STUDIO</strong> RESERVATION</h1>
+  </div>
+  <div class="main">
+    <div class="cal-panel">
+      <p class="panel-label">Step 1</p>
+      <h2 class="panel-title">날짜 & 시간 선택</h2>
+      <div class="cal-nav">
+        <button onclick="changeMonth(-1)">← Prev</button>
+        <span class="cal-month" id="calMonth"></span>
+        <button onclick="changeMonth(1)">Next →</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:var(--black)"></div>선택</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#e8a44a"></div>일부예약</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#bbb"></div>마감</div>
+      </div>
+      <div class="slots-wrap" id="slotsWrap">
+        <div class="slots-header">
+          <span class="slots-label" id="slotsLabel">시작 시간 선택</span>
+          <span class="slots-date" id="slotsDateTxt"></span>
+        </div>
+        <p class="slots-guide">① <strong>시작 시간</strong>을 먼저 클릭하고 ② <strong>종료 시간</strong>을 클릭하세요</p>
+        <div class="slots-grid" id="slotsGrid"></div>
+      </div>
+    </div>
+    <div class="form-panel">
+      <p class="panel-label">Step 2</p>
+      <h2 class="panel-title">예약 정보 입력</h2>
+      <div class="price-guide-box">
+        <p class="price-guide-title">이용 요금 안내</p>
+        <p>1시간 기준 30,000원 · 최소 2시간 예약</p>
+        <p>3인 기준 · 4인부터 1인 초과 시 시간당 5,000원 추가</p>
+      </div>
+      <div class="sel-info empty" id="selInfo">날짜와 시간을 먼저 선택해 주세요.</div>
+      <div class="fg"><label class="fl">이름 / 업체명 *</label><input class="fi" id="fName" type="text" placeholder="홍길동 / OO스튜디오"></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">연락처 *</label><input class="fi" id="fPhone" type="tel" placeholder="010-0000-0000"></div>
+        <div class="fg"><label class="fl">이메일</label><input class="fi" id="fEmail" type="email" placeholder="email@example.com"></div>
+      </div>
+      <div class="fg">
+        <label class="fl">촬영 유형 *</label>
+        <select class="fs" id="fType">
+          <option value="">선택해주세요</option>
+          <option>룩북 / 패션</option><option>제품 촬영</option>
+          <option>인물 / 프로필</option><option>매거진 / 광고</option>
+          <option>영상 촬영</option><option>기타</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">인원 수</label>
+        <select class="fs" id="fPeople">
+          <option>1명</option>
+          <option>2명</option>
+          <option selected>3명</option>
+          <option>4명</option>
+          <option>5명</option>
+          <option>6명</option>
+          <option>7명</option>
+          <option>8명</option>
+          <option>9명</option>
+          <option>10명 이상</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">요청 사항</label><textarea class="ft" id="fNote" placeholder="특별한 요청이나 궁금한 점을 적어주세요."></textarea></div>
+      <!-- 개인정보 수집 동의 -->
+      <div class="agree-box">
+        <div class="agree-title">개인정보 수집 및 이용 동의</div>
+        <div class="agree-content">
+          RAWSCENE STUDIO는 예약 서비스 제공을 위해 아래와 같이 개인정보를 수집·이용합니다.<br><br>
+          <strong>수집 항목:</strong> 이름/업체명, 연락처, 이메일<br>
+          <strong>수집 목적:</strong> 예약 확인 및 안내, 고객 응대<br>
+          <strong>보유 기간:</strong> 예약일로부터 1년<br><br>
+          위 개인정보 수집·이용에 동의하지 않으실 경우 예약이 제한될 수 있습니다.
+        </div>
+        <label class="agree-check">
+          <input type="checkbox" id="agreePrivacy">
+          <span>개인정보 수집 및 이용에 동의합니다.</span>
+        </label>
+      </div>
+
+      <!-- 예약 시 주의사항 -->
+      <div class="agree-box">
+        <div class="agree-title">예약 시 주의사항</div>
+        <div class="agree-content">
+          <ul class="terms-list">
+            <li>RAWSCENE STUDIO는 사전 예약제로 운영됩니다.</li>
+          <li>이용 요금은 1시간 30,000원이며, 최소 2시간 예약입니다. 기준 인원은 3인이고 4인부터는 1인당 시간당 5,000원이 추가됩니다.</li>
+            <li>예약 변경 및 취소는 예약일로부터 7일 전까지 가능하며, 그 이후의 취소와 변경에 대한 예약금 환불은 예약취소 및 변경에 대한 규정에 따라 처리되는 점 참조 부탁드립니다.</li>
+            <li>이용시간은 입장시간과 퇴장시간을 기준으로 하며 정리시간이 포함됩니다.</li>
+            <li>이용 후 남은 금액을 결제하시면 됩니다.</li>
+            <li>가구 및 소품 파손 시 물품가에 100% 배상책임이 있습니다.</li>
+            <li>12시간 이하의 이용일 경우 예약 시간보다 일찍 이용이 끝나더라도 예약된 시간으로 정산됩니다.</li>
+            <li>주차는 예약 기준 1대 가능합니다. 추가 주차를 원하시면 [다산 제3 공영주차장] [다산 제4 공영주차장] 유료주차장 안내해드립니다.</li>
+            <li>세금계산서 발행 가능합니다. (부가세 10% 별도)</li>
+            <li>시즌별 가구, 소품 등이 변경될 수 있습니다.</li>
+          </ul>
+
+          <div class="cancel-policy">
+            <p class="cancel-title">예약취소 및 변경에 대한 규정</p>
+            <p style="font-size:11px;color:#888;margin-bottom:10px;">이용하시기 전에 규정을 확인하여 주시기 바랍니다.</p>
+            <div class="cancel-row"><span class="cancel-day">예약일 기준 7일 전</span><span class="cancel-desc">예약금의 100% 환불</span></div>
+            <div class="cancel-row"><span class="cancel-day">예약일 기준 5일 전</span><span class="cancel-desc">전체 렌탈료의 50% 위약금 발생</span></div>
+            <div class="cancel-row"><span class="cancel-day">예약일 기준 3일 전</span><span class="cancel-desc">전체 렌탈료의 70% 위약금 발생</span></div>
+            <div class="cancel-row cancel-row-last"><span class="cancel-day">1일 전 / 당일 취소</span><span class="cancel-desc">전체 렌탈료 전액 위약금 발생</span></div>
+          </div>
+        </div>
+        <label class="agree-check">
+          <input type="checkbox" id="agreeTerms">
+          <span>예약 시 주의사항을 읽고 동의합니다.</span>
+        </label>
+      </div>
+
+      <button class="submit-btn" id="submitBtn" onclick="submitReservation()"><span id="btnTxt">예약 신청하기</span></button>
+      <p class="form-notice">
+        * <strong>예약 신청 직후에는 대기 상태</strong>로 접수됩니다.<br>
+        * <strong>입금 확인 후 관리자가 확정 처리하면 예약이 최종 확정됩니다.</strong><br>
+        * 이용 요금: 1시간 30,000원 / 최소 2시간 예약<br>
+        * 기준 인원: 3인 / 4인부터 1인당 시간당 5,000원 추가<br>
+        * 이미 예약된 시간은 선택이 불가합니다.<br>
+        * 예약 가능 기간: 오늘부터 3개월 이내<br>
+        * 문의: 010-5788-3190 · rawscene3190@gmail.com
+      </p>
+    </div>
+  </div>
+  <div class="status-section">
+    <div class="status-header">
+      <div><p class="panel-label">실시간 예약 현황</p><h2>Reservation Status</h2></div>
+    </div>
+    <div class="bk-grid" id="bkGrid"><p class="no-bk">불러오는 중...</p></div>
+  </div>
+</div>
+
+
+</body>
+</html>
