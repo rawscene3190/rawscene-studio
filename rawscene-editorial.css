@@ -590,3 +590,34 @@ padding:50px 24px;
     }
 
 }
+@media (max-width:900px){
+
+    .header{
+        height:72px;
+        padding:0 20px;
+        overflow-x:auto;
+        white-space:nowrap;
+    }
+
+    .logo{
+        font-size:24px;
+        flex-shrink:0;
+        margin-right:28px;
+    }
+
+    .nav{
+        display:flex !important;
+        gap:24px;
+        flex-shrink:0;
+    }
+
+    .nav a{
+        font-size:12px;
+        letter-spacing:.16em;
+    }
+
+    .menu-btn{
+        display:none;
+    }
+
+}
