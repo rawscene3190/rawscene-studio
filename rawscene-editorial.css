@@ -269,5 +269,444 @@ a{
     font-size:78px;
 
     font-weight:300;
+    .space-grid{
+
+    display:grid;
+
+    grid-template-columns:1.25fr .85fr;
+
+    gap:26px;
+
+    padding:0 10vw 180px;
+
+    align-items:start;
+
+}
+
+.space-grid figure{
+
+    position:relative;
+
+    overflow:hidden;
+
+    background:#eee;
+
+}
+
+.space-grid img{
+
+    width:100%;
+
+    height:100%;
+
+    object-fit:cover;
+
+    transition:1s;
+
+}
+
+.space-grid figure:hover img{
+
+    transform:scale(1.04);
+
+}
+
+.large{
+
+    aspect-ratio:4/3;
+
+}
+
+.tall{
+
+    aspect-ratio:3/4;
+
+}
+
+.wide{
+
+    grid-column:1;
+
+    aspect-ratio:16/9;
+
+    margin-top:-80px;
+
+}
+
+.space-grid figure:last-child{
+
+    margin-top:120px;
+
+}
+
+.space-grid figcaption{
+
+    position:absolute;
+
+    left:28px;
+
+    bottom:28px;
+
+    color:#fff;
+
+    font-family:var(--serif);
+
+    font-size:36px;
+
+    font-weight:300;
+
+    letter-spacing:.08em;
+
+}
+
+.works{
+
+    padding:120px 10vw 180px;
+
+}
+
+.works-head{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:flex-end;
+
+    margin-bottom:70px;
+
+}
+
+.works-head span{
+
+    letter-spacing:.35em;
+
+    font-size:12px;
+
+}
+
+.works-head h2{
+
+    font-family:var(--serif);
+
+    font-size:72px;
+
+    font-weight:300;
+
+    line-height:.9;
+
+}
+
+.works-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(2,1fr);
+
+    gap:18px;
+
+}
+
+.works-grid figure{
+
+    overflow:hidden;
+
+    background:#eee;
+
+}
+
+.works-grid figure:nth-child(1){
+
+    aspect-ratio:4/5;
+
+}
+
+.works-grid figure:nth-child(2){
+
+    aspect-ratio:3/2;
+
+    margin-top:100px;
+
+}
+
+.works-grid figure:nth-child(3){
+
+    aspect-ratio:3/2;
+
+}
+
+.works-grid figure:nth-child(4){
+
+    aspect-ratio:4/5;
+
+    margin-top:-80px;
+
+}
+
+.works-grid img{
+
+    width:100%;
+
+    height:100%;
+
+    object-fit:cover;
+
+    transition:1s;
+
+}
+
+.works-grid figure:hover img{
+
+    transform:scale(1.05);
+
+}
+
+.reservation-banner{
+
+    background:#141414;
+
+    color:white;
+
+    padding:140px 10vw;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+}
+
+.reservation-banner span{
+
+    letter-spacing:.35em;
+
+    font-size:12px;
+
+}
+
+.reservation-banner h2{
+
+    font-family:var(--serif);
+
+    font-size:72px;
+
+    font-weight:300;
+
+    margin:18px 0;
+
+}
+
+.reservation-banner p{
+
+    max-width:420px;
+
+    line-height:2;
+
+    opacity:.75;
+
+}
+
+.reservation-banner a{
+
+    border:1px solid white;
+
+    padding:18px 38px;
+
+    letter-spacing:.18em;
+
+    text-transform:uppercase;
+
+    transition:.35s;
+
+}
+
+.reservation-banner a:hover{
+
+    background:white;
+
+    color:#111;
+
+}
+
+.footer{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    padding:90px 10vw;
+
+    border-top:1px solid #e6e2dc;
+
+}
+
+.footer h3{
+
+    font-family:var(--serif);
+
+    font-size:34px;
+
+    font-weight:300;
+
+}
+
+.footer p{
+
+    line-height:2;
+
+    color:#666;
+
+}
+
+@media(max-width:900px){
+
+.header{
+
+padding:0 24px;
+
+height:72px;
+
+}
+
+.nav{
+
+display:none;
+
+}
+
+.menu-btn{
+
+display:block;
+
+}
+
+.hero-copy{
+
+left:24px;
+
+bottom:70px;
+
+}
+
+.hero-copy h1{
+
+font-size:72px;
+
+}
+
+.manifest{
+
+padding:90px 24px;
+
+}
+
+.manifest p{
+
+font-size:36px;
+
+}
+
+.space-title{
+
+padding:0 24px 40px;
+
+}
+
+.space-title h2{
+
+font-size:48px;
+
+}
+
+.space-grid{
+
+grid-template-columns:1fr;
+
+padding:0 24px 80px;
+
+gap:12px;
+
+}
+
+.large,
+
+.tall,
+
+.wide{
+
+margin:0!important;
+
+aspect-ratio:4/5;
+
+}
+
+.works{
+
+padding:80px 24px;
+
+}
+
+.works-head{
+
+display:block;
+
+}
+
+.works-head h2{
+
+margin-top:20px;
+
+font-size:48px;
+
+}
+
+.works-grid{
+
+grid-template-columns:1fr;
+
+gap:12px;
+
+}
+
+.works-grid figure{
+
+margin:0!important;
+
+aspect-ratio:4/5!important;
+
+}
+
+.reservation-banner{
+
+display:block;
+
+padding:80px 24px;
+
+}
+
+.reservation-banner h2{
+
+font-size:46px;
+
+}
+
+.reservation-banner a{
+
+display:inline-block;
+
+margin-top:30px;
+
+}
+
+.footer{
+
+display:block;
+
+padding:50px 24px;
+
+}
+
+}
 
 }
