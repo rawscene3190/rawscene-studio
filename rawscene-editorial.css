@@ -363,6 +363,10 @@ a{
 
     padding:120px 10vw 180px;
 
+    max-width:1400px;
+
+    margin:auto;
+
 }
 
 .works-head{
@@ -403,7 +407,9 @@ a{
 
     grid-template-columns:repeat(2,1fr);
 
-    gap:18px;
+    gap:20px;
+
+    align-items:start;
 
 }
 
@@ -417,29 +423,25 @@ a{
 
 .works-grid figure:nth-child(1){
 
-    aspect-ratio:4/5;
+    aspect-ratio:4/3;
 
 }
 
 .works-grid figure:nth-child(2){
 
-    aspect-ratio:3/2;
-
-    margin-top:100px;
+    aspect-ratio:4/3;
 
 }
 
 .works-grid figure:nth-child(3){
 
-    aspect-ratio:3/2;
+    aspect-ratio:4/3;
 
 }
 
 .works-grid figure:nth-child(4){
 
-    aspect-ratio:4/5;
-
-    margin-top:-80px;
+    aspect-ratio:4/3;
 
 }
 
