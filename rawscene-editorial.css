@@ -1,5 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap');
 
+
+/* =========================
+   BASIC
+========================= */
+
 *{
     margin:0;
     padding:0;
@@ -17,6 +22,10 @@ body{
     overflow-x:hidden;
 }
 
+body.lightbox-open{
+    overflow:hidden;
+}
+
 img{
     width:100%;
     display:block;
@@ -27,148 +36,61 @@ a{
     text-decoration:none;
 }
 
+button{
+    font:inherit;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
 .header{
-
     position:fixed;
-
     top:0;
     left:0;
-
     width:100%;
-
     height:90px;
-
     display:flex;
-
     justify-content:space-between;
-
     align-items:center;
-
     padding:0 60px;
-
     background:rgba(248,246,242,.92);
-
     backdrop-filter:blur(15px);
-
+    -webkit-backdrop-filter:blur(15px);
     z-index:1000;
-
 }
 
 .logo{
-
     font-family:'Cormorant Garamond',serif;
-
     font-size:28px;
-
     letter-spacing:.35em;
-
+    white-space:nowrap;
 }
 
 .nav{
-
     display:flex;
-
     gap:45px;
-
 }
 
 .nav a{
-
-    font-size:13px;
-
-    letter-spacing:.18em;
-
-    text-transform:uppercase;
-
-}
-
-.hero{
-
     position:relative;
-
-    height:100vh;
-
-    overflow:hidden;
-
-}
-
-.hero-image{
-
-    width:100%;
-
-    height:100%;
-
-    object-fit:cover;
-
-}
-
-.hero-overlay{
-
-    position:absolute;
-
-    inset:0;
-
-    background:rgba(0,0,0,.18);
-
-}
-
-.hero-copy{
-
-    position:absolute;
-
-    left:8%;
-
-    bottom:13%;
-
-    color:white;
-
-}
-
-.hero-copy span{
-
-    letter-spacing:.35em;
-
     font-size:13px;
-
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    white-space:nowrap;
 }
 
-.hero-copy h1{
-
-    font-family:'Cormorant Garamond',serif;
-
-    font-size:clamp(90px,10vw,170px);
-
-    font-weight:300;
-
-    margin:20px 0;
-
-}
-
-.hero-copy p{
-
-    font-size:18px;
-
-    line-height:1.8;
-
-}
-
-.scroll{
-
+.nav a[aria-current="page"]::after{
+    content:"";
     position:absolute;
-
-    right:40px;
-
-    bottom:40px;
-
-    writing-mode:vertical-rl;
-
-    color:white;
-
-    letter-spacing:.4em;
-
-    font-size:12px;
-
+    left:0;
+    right:.18em;
+    bottom:-8px;
+    height:1px;
+    background:#111;
 }
+
 .menu-btn{
     display:none;
 }
@@ -177,398 +99,440 @@ main{
     margin-top:90px;
 }
 
-.manifest{
 
-    padding:120px 8%;
+/* =========================
+   HOME HERO
+========================= */
 
-    text-align:center;
-
+.hero{
+    position:relative;
+    height:100vh;
+    overflow:hidden;
 }
 
-.manifest p{
-
-    font-family:'Cormorant Garamond',serif;
-
-    font-size:clamp(32px,4vw,56px);
-
-    line-height:1.4;
-
-}
-
-.space-title{
-
-    padding:0 8% 60px;
-
-}
-
-.space-title span{
-
-    letter-spacing:.3em;
-
-    font-size:12px;
-
-}
-
-.space-title h2{
-
-    font-family:'Cormorant Garamond',serif;
-
-    font-size:clamp(60px,7vw,110px);
-
-    font-weight:300;
-
-    margin-top:15px;
-
-}
-
-.space-grid{
-
-    padding:0 8% 140px;
-
-    display:grid;
-
-    grid-template-columns:1.3fr .8fr 1fr .8fr;
-
-    gap:24px;
-
-    align-items:start;
-
-}
-
-.space-grid figure{
-
-    margin:0;
-
-}
-
-.space-grid img{
-
+.hero-image{
     width:100%;
-
-    border-radius:2px;
-
-}
-
-.space-grid .large img{
-
-    aspect-ratio:4/5;
-
+    height:100%;
     object-fit:cover;
-
 }
 
-.space-grid .tall img{
-
-    aspect-ratio:3/5;
-
-    object-fit:cover;
-
-}
-
-.space-grid .wide img{
-
-    aspect-ratio:4/3;
-
-    object-fit:cover;
-
-}
-
-.space-grid figcaption{
-
-    margin-top:12px;
-
-    font-size:14px;
-
-    letter-spacing:.15em;
-
-    text-transform:uppercase;
-
-}
-.works{
-
-    padding:120px 8% 160px;
-
-}
-
-.works-head{
-
-    display:flex;
-
-    justify-content:space-between;
-
-    align-items:flex-end;
-
-    margin-bottom:50px;
-
-}
-
-.works-head span{
-
-    font-size:12px;
-
-    letter-spacing:.3em;
-
-}
-
-.works-head h2{
-
-    font-family:'Cormorant Garamond',serif;
-
-    font-size:clamp(60px,7vw,110px);
-
-    font-weight:300;
-
-    line-height:.95;
-
-}
-
-.works-grid{
-
-    display:grid;
-
-    grid-template-columns:repeat(2,minmax(0,1fr));
-
-    gap:24px;
-
-}
-
-.works-grid figure{
-
-    margin:0;
-
-}
-
-.works-grid img{
-
-    width:100%;
-
-    aspect-ratio:4/5;
-
-    object-fit:cover;
-
-    display:block;
-
-}
-
-.reservation-banner{
-
-    background:#111;
-
-    color:#fff;
-
-    padding:120px 8%;
-
-    display:flex;
-
-    justify-content:space-between;
-
-    align-items:center;
-
-    gap:60px;
-
-}
-
-.reservation-banner span{
-
-    font-size:12px;
-
-    letter-spacing:.3em;
-
-}
-
-.reservation-banner h2{
-
-    font-family:'Cormorant Garamond',serif;
-
-    font-size:clamp(56px,6vw,90px);
-
-    font-weight:300;
-
-    margin:16px 0;
-
-}
-
-.reservation-banner p{
-
-    max-width:480px;
-
-    line-height:1.9;
-
-    opacity:.8;
-
-}
-
-.reservation-banner a{
-
-    border:1px solid #fff;
-
-    padding:18px 36px;
-
-    text-transform:uppercase;
-
-    letter-spacing:.18em;
-
-}
-
-.footer{
-
-    display:flex;
-
-    justify-content:space-between;
-
-    padding:70px 8%;
-
-    border-top:1px solid #e5e0d8;
-
-}
-
-.footer h3{
-
-    font-family:'Cormorant Garamond',serif;
-
-    font-size:34px;
-
-    font-weight:300;
-
-}
-
-.footer p{
-
-    line-height:1.9;
-
-    color:#666;
-
-}
-
-@media (max-width:900px){
-
-.header{
-
-padding:0 20px;
-
-height:72px;
-
-}
-
-.nav{
-
-display:none;
-
+.hero-overlay{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,.18);
 }
 
 .hero-copy{
+    position:absolute;
+    left:8%;
+    bottom:13%;
+    color:white;
+}
 
-left:24px;
-
-right:24px;
-
-bottom:60px;
-
+.hero-copy span{
+    letter-spacing:.35em;
+    font-size:13px;
 }
 
 .hero-copy h1{
-
-font-size:64px;
-
+    font-family:'Cormorant Garamond',serif;
+    font-size:clamp(90px,10vw,170px);
+    font-weight:300;
+    margin:20px 0;
 }
 
 .hero-copy p{
-
-font-size:15px;
-
+    font-size:18px;
+    line-height:1.8;
 }
 
 .scroll{
-
-display:none;
-
+    position:absolute;
+    right:40px;
+    bottom:40px;
+    writing-mode:vertical-rl;
+    color:white;
+    letter-spacing:.4em;
+    font-size:12px;
 }
 
+
+/* =========================
+   HOME MANIFEST
+========================= */
+
 .manifest{
-
-padding:70px 24px;
-
+    padding:120px 8%;
+    text-align:center;
 }
 
 .manifest p{
-
-font-size:34px;
-
+    font-family:'Cormorant Garamond',serif;
+    font-size:clamp(32px,4vw,56px);
+    line-height:1.4;
 }
 
+
+/* =========================
+   HOME SPACE
+========================= */
+
 .space-title{
+    padding:0 8% 60px;
+}
 
-padding:0 24px 40px;
+.space-title span{
+    letter-spacing:.3em;
+    font-size:12px;
+}
 
+.space-title h2{
+    font-family:'Cormorant Garamond',serif;
+    font-size:clamp(60px,7vw,110px);
+    font-weight:300;
+    margin-top:15px;
 }
 
 .space-grid{
-
-grid-template-columns:1fr;
-
-padding:0 24px 80px;
-
-gap:16px;
-
+    padding:0 8% 140px;
+    display:grid;
+    grid-template-columns:1.3fr .8fr 1fr .8fr;
+    gap:24px;
+    align-items:start;
 }
 
-.space-grid .large img,
-.space-grid .tall img,
+.space-grid figure{
+    margin:0;
+}
+
+.space-grid img{
+    width:100%;
+    border-radius:2px;
+}
+
+.space-grid .large img{
+    aspect-ratio:4/5;
+    object-fit:cover;
+}
+
+.space-grid .tall img{
+    aspect-ratio:3/5;
+    object-fit:cover;
+}
+
 .space-grid .wide img{
-
-aspect-ratio:4/5;
-
+    aspect-ratio:4/3;
+    object-fit:cover;
 }
+
+.space-grid figcaption{
+    margin-top:12px;
+    font-size:14px;
+    letter-spacing:.15em;
+    text-transform:uppercase;
+}
+
+
+/* =========================
+   HOME WORKS
+========================= */
 
 .works{
-
-padding:70px 24px;
-
+    padding:120px 8% 160px;
 }
 
 .works-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    margin-bottom:50px;
+}
 
-display:block;
-
+.works-head span{
+    font-size:12px;
+    letter-spacing:.3em;
 }
 
 .works-head h2{
-
-margin-top:16px;
-
+    font-family:'Cormorant Garamond',serif;
+    font-size:clamp(60px,7vw,110px);
+    font-weight:300;
+    line-height:.95;
 }
 
 .works-grid{
-
-grid-template-columns:1fr;
-
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:24px;
 }
 
+.works-grid figure{
+    margin:0;
+}
+
+.works-grid img{
+    width:100%;
+    aspect-ratio:4/5;
+    object-fit:cover;
+}
+
+
+/* =========================
+   STUDIO GALLERY PAGE
+========================= */
+
+.studio-gallery-page{
+    padding-top:1px;
+}
+
+.studio-gallery-heading{
+    padding:120px 8% 80px;
+}
+
+.studio-gallery-label{
+    margin-bottom:18px;
+    font-size:12px;
+    font-weight:400;
+    letter-spacing:.35em;
+}
+
+.studio-gallery-heading h1{
+    font-family:'Cormorant Garamond',serif;
+    font-size:clamp(62px,8vw,128px);
+    font-weight:300;
+    line-height:.9;
+    letter-spacing:-.025em;
+}
+
+.studio-gallery-description{
+    max-width:580px;
+    margin-top:36px;
+    color:#5e5b56;
+    font-size:14px;
+    line-height:1.9;
+    word-break:keep-all;
+}
+
+.studio-gallery{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:20px;
+    padding:0 8% 150px;
+}
+
+.gallery-item{
+    margin:0;
+    overflow:hidden;
+    background:#ece8e1;
+}
+
+.gallery-item-wide{
+    grid-column:1 / -1;
+}
+
+.gallery-button{
+    width:100%;
+    margin:0;
+    padding:0;
+    display:block;
+    border:0;
+    background:none;
+    overflow:hidden;
+    cursor:zoom-in;
+}
+
+.gallery-button img{
+    width:100%;
+    aspect-ratio:4/3;
+    object-fit:cover;
+    transition:transform .7s cubic-bezier(.2,.65,.3,1);
+}
+
+.gallery-button:hover img{
+    transform:scale(1.015);
+}
+
+.gallery-button:focus-visible{
+    outline:2px solid #111;
+    outline-offset:4px;
+}
+
+
+/* =========================
+   LIGHTBOX
+========================= */
+
+.gallery-lightbox{
+    position:fixed;
+    inset:0;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:50px 100px;
+    background:rgba(10,10,10,.96);
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+    transition:
+        opacity .25s ease,
+        visibility .25s ease;
+    z-index:10000;
+}
+
+.gallery-lightbox.is-open{
+    opacity:1;
+    visibility:visible;
+    pointer-events:auto;
+}
+
+.lightbox-image-wrap{
+    position:relative;
+    width:100%;
+    height:100%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.lightbox-image{
+    width:auto;
+    max-width:100%;
+    max-height:calc(100vh - 100px);
+    object-fit:contain;
+    user-select:none;
+    -webkit-user-drag:none;
+}
+
+.lightbox-close{
+    position:absolute;
+    top:24px;
+    right:30px;
+    width:48px;
+    height:48px;
+    border:0;
+    background:none;
+    color:#fff;
+    font-size:42px;
+    font-weight:300;
+    line-height:1;
+    cursor:pointer;
+    z-index:3;
+}
+
+.lightbox-arrow{
+    position:absolute;
+    top:50%;
+    width:56px;
+    height:70px;
+    border:0;
+    background:none;
+    color:#fff;
+    font-family:'Cormorant Garamond',serif;
+    font-size:64px;
+    font-weight:300;
+    line-height:1;
+    transform:translateY(-50%);
+    cursor:pointer;
+    z-index:3;
+}
+
+.lightbox-prev{
+    left:24px;
+}
+
+.lightbox-next{
+    right:24px;
+}
+
+.lightbox-counter{
+    position:absolute;
+    left:50%;
+    bottom:2px;
+    transform:translateX(-50%);
+    color:rgba(255,255,255,.72);
+    font-size:11px;
+    letter-spacing:.25em;
+    white-space:nowrap;
+}
+
+
+/* =========================
+   RESERVATION BANNER
+========================= */
+
 .reservation-banner{
+    background:#111;
+    color:#fff;
+    padding:120px 8%;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:60px;
+}
 
-display:block;
+.reservation-banner span{
+    font-size:12px;
+    letter-spacing:.3em;
+}
 
-padding:70px 24px;
+.reservation-banner h2{
+    font-family:'Cormorant Garamond',serif;
+    font-size:clamp(56px,6vw,90px);
+    font-weight:300;
+    margin:16px 0;
+}
 
+.reservation-banner p{
+    max-width:480px;
+    line-height:1.9;
+    opacity:.8;
 }
 
 .reservation-banner a{
-
-display:inline-block;
-
-margin-top:30px;
-
+    flex-shrink:0;
+    border:1px solid #fff;
+    padding:18px 36px;
+    text-transform:uppercase;
+    letter-spacing:.18em;
+    transition:
+        background .25s ease,
+        color .25s ease;
 }
+
+.reservation-banner a:hover{
+    background:#fff;
+    color:#111;
+}
+
+
+/* =========================
+   FOOTER
+========================= */
 
 .footer{
-
-display:block;
-
-padding:50px 24px;
-
+    display:flex;
+    justify-content:space-between;
+    gap:50px;
+    padding:70px 8%;
+    border-top:1px solid #e5e0d8;
 }
 
+.footer h3{
+    font-family:'Cormorant Garamond',serif;
+    font-size:34px;
+    font-weight:300;
 }
+
+.footer p{
+    line-height:1.9;
+    color:#666;
+}
+
+
+/* =========================
+   DESKTOP
+========================= */
+
 @media (min-width:901px){
 
     .hero-image{
@@ -590,95 +554,222 @@ padding:50px 24px;
     }
 
 }
+
+
+/* =========================
+   MOBILE
+========================= */
+
 @media (max-width:900px){
 
     .header{
-        height:72px;
-        padding:0 20px;
-        overflow-x:auto;
-        white-space:nowrap;
+        position:sticky;
+        top:0;
+        width:100%;
+        height:auto;
+        min-height:86px;
+        padding:26px 24px 18px;
+        display:block;
+        background:#f8f6f2;
+        overflow:hidden;
+        z-index:9999;
     }
 
     .logo{
-        font-size:24px;
-        flex-shrink:0;
-        margin-right:28px;
+        display:block;
+        margin:0 0 22px;
+        font-size:30px;
+        letter-spacing:.28em;
     }
 
     .nav{
-        display:flex !important;
-        gap:24px;
-        flex-shrink:0;
+        display:flex;
+        flex-wrap:nowrap;
+        gap:22px;
+        width:100%;
+        padding-bottom:4px;
+        overflow-x:auto;
+        overflow-y:hidden;
+        -webkit-overflow-scrolling:touch;
+        scrollbar-width:none;
+    }
+
+    .nav::-webkit-scrollbar{
+        display:none;
     }
 
     .nav a{
+        display:inline-block;
+        flex:0 0 auto;
+        color:#111;
         font-size:12px;
-        letter-spacing:.16em;
+        letter-spacing:.18em;
+        opacity:1;
+    }
+
+    .nav a[aria-current="page"]::after{
+        bottom:-5px;
     }
 
     .menu-btn{
         display:none;
     }
 
-}
-@media(max-width:900px){
-
-    .header{
-        position:sticky !important;
-        top:0 !important;
-        height:auto !important;
-        min-height:86px !important;
-        padding:26px 24px 18px !important;
-        display:block !important;
-        background:#f8f6f2 !important;
-        overflow:hidden !important;
-        z-index:9999 !important;
-    }
-
-    .logo{
-        display:block !important;
-        font-size:30px !important;
-        letter-spacing:.28em !important;
-        margin-bottom:22px !important;
-        white-space:nowrap !important;
-    }
-
-    .nav{
-        display:flex !important;
-        flex-wrap:nowrap !important;
-        gap:22px !important;
-        overflow-x:auto !important;
-        overflow-y:hidden !important;
-        width:100% !important;
-        padding-bottom:4px !important;
-        -webkit-overflow-scrolling:touch !important;
-        scrollbar-width:none !important;
-    }
-
-    .nav::-webkit-scrollbar{
-        display:none !important;
-    }
-
-    .nav a{
-        display:inline-block !important;
-        flex:0 0 auto !important;
-        font-size:12px !important;
-        letter-spacing:.18em !important;
-        text-transform:uppercase !important;
-        white-space:nowrap !important;
-        opacity:1 !important;
-        color:#111 !important;
-    }
-
-    .menu-btn{
-        display:none !important;
-    }
-
     main{
-        margin-top:0 !important;
+        margin-top:0;
     }
 
     .hero{
-        height:calc(100vh - 120px) !important;
+        height:calc(100vh - 120px);
     }
+
+    .hero-copy{
+        left:24px;
+        right:24px;
+        bottom:60px;
+    }
+
+    .hero-copy h1{
+        font-size:64px;
+    }
+
+    .hero-copy p{
+        font-size:15px;
+    }
+
+    .scroll{
+        display:none;
+    }
+
+    .manifest{
+        padding:70px 24px;
+    }
+
+    .manifest p{
+        font-size:34px;
+    }
+
+    .space-title{
+        padding:0 24px 40px;
+    }
+
+    .space-grid{
+        grid-template-columns:1fr;
+        padding:0 24px 80px;
+        gap:16px;
+    }
+
+    .space-grid .large img,
+    .space-grid .tall img,
+    .space-grid .wide img{
+        aspect-ratio:4/5;
+    }
+
+    .works{
+        padding:70px 24px;
+    }
+
+    .works-head{
+        display:block;
+    }
+
+    .works-head h2{
+        margin-top:16px;
+    }
+
+    .works-grid{
+        grid-template-columns:1fr;
+    }
+
+    .studio-gallery-heading{
+        padding:72px 20px 48px;
+    }
+
+    .studio-gallery-label{
+        margin-bottom:14px;
+        font-size:10px;
+    }
+
+    .studio-gallery-heading h1{
+        font-size:clamp(48px,15vw,72px);
+        line-height:.92;
+    }
+
+    .studio-gallery-description{
+        max-width:440px;
+        margin-top:24px;
+        font-size:12px;
+        line-height:1.8;
+    }
+
+    .studio-gallery{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:6px;
+        padding:0 6px 80px;
+    }
+
+    .gallery-button img{
+        aspect-ratio:4/3;
+    }
+
+    .gallery-button:hover img{
+        transform:none;
+    }
+
+    .reservation-banner{
+        display:block;
+        padding:70px 24px;
+    }
+
+    .reservation-banner a{
+        display:inline-block;
+        margin-top:30px;
+    }
+
+    .footer{
+        display:block;
+        padding:50px 24px;
+    }
+
+    .footer-right{
+        margin-top:28px;
+    }
+
+    .gallery-lightbox{
+        padding:60px 10px 48px;
+    }
+
+    .lightbox-image{
+        max-height:calc(100vh - 108px);
+    }
+
+    .lightbox-close{
+        top:10px;
+        right:10px;
+        width:44px;
+        height:44px;
+        font-size:38px;
+    }
+
+    .lightbox-arrow{
+        top:auto;
+        bottom:8px;
+        width:50px;
+        height:44px;
+        font-size:50px;
+        transform:none;
+    }
+
+    .lightbox-prev{
+        left:12px;
+    }
+
+    .lightbox-next{
+        right:12px;
+    }
+
+    .lightbox-counter{
+        bottom:16px;
+    }
+
 }
