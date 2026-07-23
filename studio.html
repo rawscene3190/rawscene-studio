@@ -1,11 +1,17 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Studio | RAWSCENE</title>
-<meta name="description" content="RAWSCENE studio space gallery. Indoor, Wood, Outdoor, White.">
-<link rel="stylesheet" href="rawscene-editorial.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Studio | RAWSCENE</title>
+
+    <meta
+        name="description"
+        content="RAWSCENE의 실내 공간, 오브제, 출입구 및 야외 촬영 공간을 확인해보세요."
+    >
+
+    <link rel="stylesheet" href="rawscene-editorial.css">
 </head>
 
 <body>
@@ -13,8 +19,8 @@
 <header class="header">
     <a class="logo" href="index.html">RAWSCENE</a>
 
-    <nav class="nav">
-        <a href="studio.html">Studio</a>
+    <nav class="nav" aria-label="주요 메뉴">
+        <a href="studio.html" aria-current="page">Studio</a>
         <a href="archive.html">Archive</a>
         <a href="info.html">Info</a>
         <a href="schedule.html">Schedule</a>
@@ -22,62 +28,194 @@
     </nav>
 </header>
 
-<main class="studio-page">
+<main class="studio-gallery-page">
 
-    <section class="studio-hero">
-        <p>STUDIO</p>
-        <h1>Space Gallery</h1>
+    <section class="studio-gallery-heading">
+        <p class="studio-gallery-label">STUDIO</p>
+        <h1>RAWSCENE SPACE</h1>
+
+        <p class="studio-gallery-description">
+            패션, 제품, 브랜드 콘텐츠 촬영을 위한 RAWSCENE의 공간을 확인해보세요.
+        </p>
     </section>
 
-    <section class="studio-photo-list">
+    <section class="studio-gallery" aria-label="RAWSCENE 공간 갤러리">
 
-        <article class="studio-photo-block">
-            <div class="studio-text">
-                <span>01</span>
-                <h2>Indoor</h2>
-                <p>브랜드 촬영, 제품 촬영, 인플루언서 콘텐츠를 위한 실내 공간.</p>
-            </div>
+        <!-- 01. 메인 대표 사진 -->
+        <figure class="gallery-item gallery-item-wide">
+            <button
+                class="gallery-button"
+                type="button"
+                data-gallery-index="0"
+                aria-label="메인 공간 사진 크게 보기"
+            >
+                <img
+                    src="images/gallery-01.jpg"
+                    alt="RAWSCENE 스튜디오 메인 공간 전경"
+                    loading="eager"
+                >
+            </button>
+        </figure>
 
-            <figure>
-                <img src="images/studio-indoor-01.jpg" alt="Indoor">
-            </figure>
-        </article>
+        <!-- 02. 내부 전경 1 -->
+        <figure class="gallery-item">
+            <button
+                class="gallery-button"
+                type="button"
+                data-gallery-index="1"
+                aria-label="내부 공간 사진 1 크게 보기"
+            >
+                <img
+                    src="images/gallery-02.jpg"
+                    alt="RAWSCENE 내부 공간 전경 1"
+                    loading="lazy"
+                >
+            </button>
+        </figure>
 
-        <article class="studio-photo-block reverse">
-            <div class="studio-text">
-                <span>02</span>
-                <h2>Wood</h2>
-                <p>우드 오브제와 따뜻한 질감이 살아있는 촬영 무드.</p>
-            </div>
+        <!-- 03. 내부 전경 2 -->
+        <figure class="gallery-item">
+            <button
+                class="gallery-button"
+                type="button"
+                data-gallery-index="2"
+                aria-label="내부 공간 사진 2 크게 보기"
+            >
+                <img
+                    src="images/gallery-03.jpg"
+                    alt="RAWSCENE 내부 공간 전경 2"
+                    loading="lazy"
+                >
+            </button>
+        </figure>
 
-            <figure>
-                <img src="images/studio-wood-01.jpg" alt="Wood">
-            </figure>
-        </article>
+        <!-- 04. 내부 오브제 1 -->
+        <figure class="gallery-item">
+            <button
+                class="gallery-button"
+                type="button"
+                data-gallery-index="3"
+                aria-label="내부 오브제 사진 1 크게 보기"
+            >
+                <img
+                    src="images/gallery-04.jpg"
+                    alt="RAWSCENE 내부 공간과 오브제 1"
+                    loading="lazy"
+                >
+            </button>
+        </figure>
 
-        <article class="studio-photo-block">
-            <div class="studio-text">
-                <span>03</span>
-                <h2>Outdoor</h2>
-                <p>외부 촬영까지 자연스럽게 연결되는 공간.</p>
-            </div>
+        <!-- 05. 내부 오브제 2 -->
+        <figure class="gallery-item">
+            <button
+                class="gallery-button"
+                type="button"
+                data-gallery-index="4"
+                aria-label="내부 오브제 사진 2 크게 보기"
+            >
+                <img
+                    src="images/gallery-05.jpg"
+                    alt="RAWSCENE 내부 공간과 오브제 2"
+                    loading="lazy"
+                >
+            </button>
+        </figure>
 
-            <figure>
-                <img src="images/studio-outdoor-01.jpg" alt="Outdoor">
-            </figure>
-        </article>
+        <!-- 06. 내부 오브제 3 -->
+        <figure class="gallery-item">
+            <button
+                class="gallery-button"
+                type="button"
+                data-gallery-index="5"
+                aria-label="내부 오브제 사진 3 크게 보기"
+            >
+                <img
+                    src="images/gallery-06.jpg"
+                    alt="RAWSCENE 내부 공간과 오브제 3"
+                    loading="lazy"
+                >
+            </button>
+        </figure>
 
-        <article class="studio-photo-block reverse">
-            <div class="studio-text">
-                <span>04</span>
-                <h2>White</h2>
-                <p>화이트 톤과 크롬 오브제가 돋보이는 미니멀한 장면.</p>
-            </div>
+        <!-- 07. 내부 오브제 4 -->
+        <figure class="gallery-item">
+            <button
+                class="gallery-button"
+                type="button"
+                data-gallery-index="6"
+                aria-label="내부 오브제 사진 4 크게 보기"
+            >
+                <img
+                    src="images/gallery-07.jpg"
+                    alt="RAWSCENE 내부 공간과 오브제 4"
+                    loading="lazy"
+                >
+            </button>
+        </figure>
 
-            <figure>
-                <img src="images/studio-white-01.jpg" alt="White">
-            </figure>
-        </article>
+        <!-- 08. 야외 출입구 -->
+        <figure class="gallery-item gallery-item-wide">
+            <button
+                class="gallery-button"
+                type="button"
+                data-gallery-index="7"
+                aria-label="야외 출입구 사진 크게 보기"
+            >
+                <img
+                    src="images/gallery-08.jpg"
+                    alt="RAWSCENE 야외 출입구"
+                    loading="lazy"
+                >
+            </button>
+        </figure>
+
+        <!-- 09. 야외 공간 1 -->
+        <figure class="gallery-item">
+            <button
+                class="gallery-button"
+                type="button"
+                data-gallery-index="8"
+                aria-label="야외 공간 사진 1 크게 보기"
+            >
+                <img
+                    src="images/gallery-09.jpg"
+                    alt="RAWSCENE 야외 촬영 공간 1"
+                    loading="lazy"
+                >
+            </button>
+        </figure>
+
+        <!-- 10. 야외 공간 2 -->
+        <figure class="gallery-item">
+            <button
+                class="gallery-button"
+                type="button"
+                data-gallery-index="9"
+                aria-label="야외 공간 사진 2 크게 보기"
+            >
+                <img
+                    src="images/gallery-10.jpg"
+                    alt="RAWSCENE 야외 촬영 공간 2"
+                    loading="lazy"
+                >
+            </button>
+        </figure>
+
+        <!-- 11. 야외 공간 3 -->
+        <figure class="gallery-item gallery-item-wide">
+            <button
+                class="gallery-button"
+                type="button"
+                data-gallery-index="10"
+                aria-label="야외 공간 사진 3 크게 보기"
+            >
+                <img
+                    src="images/gallery-11.jpg"
+                    alt="RAWSCENE 야외 촬영 공간 3"
+                    loading="lazy"
+                >
+            </button>
+        </figure>
 
     </section>
 
@@ -93,6 +231,49 @@
 
 </main>
 
+<div
+    class="gallery-lightbox"
+    id="galleryLightbox"
+    role="dialog"
+    aria-modal="true"
+    aria-label="사진 크게 보기"
+    aria-hidden="true"
+>
+    <button
+        class="lightbox-close"
+        type="button"
+        aria-label="사진 닫기"
+    >
+        ×
+    </button>
+
+    <button
+        class="lightbox-arrow lightbox-prev"
+        type="button"
+        aria-label="이전 사진"
+    >
+        ‹
+    </button>
+
+    <div class="lightbox-image-wrap">
+        <img
+            class="lightbox-image"
+            src=""
+            alt=""
+        >
+
+        <p class="lightbox-counter" aria-live="polite"></p>
+    </div>
+
+    <button
+        class="lightbox-arrow lightbox-next"
+        type="button"
+        aria-label="다음 사진"
+    >
+        ›
+    </button>
+</div>
+
 <footer class="footer">
     <div class="footer-left">
         <h3>RAWSCENE</h3>
@@ -100,9 +281,11 @@
 
     <div class="footer-right">
         <p>경기 남양주시 다산순환로 20 현대프리미엄캠퍼스몰 D118</p>
-        <p>Indoor · Wood · Outdoor · White</p>
+        <p>Studio · Archive · Schedule · Reservation</p>
     </div>
 </footer>
+
+<script src="rawscene-editorial.js"></script>
 
 </body>
 </html>
