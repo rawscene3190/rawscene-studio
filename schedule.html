@@ -1,60 +1,769 @@
-.schedule-cta{
-    display:flex;
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schedule — RAWSCENE STUDIO</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+   const firebaseConfig = {
+  apiKey: "AIzaSyBz_fIbeZQ1VVXiYImFnrOZElfZkYrBxc",
+  authDomain: "rawscene-studio-new.firebaseapp.com",
+  projectId: "rawscene-studio-new",
+  storageBucket: "rawscene-studio-new.firebasestorage.app",
+  messagingSenderId: "693631707823",
+  appId: "1:693631707823:web:c34b0a9a625eb36541425a"
+};
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  let currentDate = new Date();
+  let allBookings = [];
+
+  const monthTitle = document.getElementById("monthTitle");
+  const calendarGrid = document.getElementById("calendarGrid");
+  const counter = document.getElementById("counter");
+  const loadingState = document.getElementById("loadingState");
+  const errorState = document.getElementById("errorState");
+
+  function getLocalDateString(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
+  function endTime(time) {
+    if (!time) return "";
+    const [h, m = "00"] = time.split(":");
+    const nextHour = String(Number(h) + 1).padStart(2, "0");
+    return `${nextHour}:${m}`;
+  }
+
+  function maskName(name) {
+    if (!name) return "예약자";
+    const clean = String(name).trim();
+
+    if (clean.length <= 1) return clean + "*";
+
+    if (clean.includes("/") || clean.includes(" ")) {
+      const firstPart = clean.split(/[\/\s]+/)[0];
+      return firstPart[0] + "*".repeat(Math.min(firstPart.length - 1, 3));
+    }
+
+    return clean[0] + "*".repeat(Math.min(clean.length - 1, 3));
+  }
+
+  function phoneTail(phone) {
+    if (!phone) return "";
+    const numbers = String(phone).replace(/\D/g, "");
+    return numbers.slice(-4);
+  }
+
+  function bookingTimeText(b) {
+    const start = b.startTime || b.time || "";
+    const end = b.endTime || endTime(start);
+    if (!start) return "예약 완료";
+    return `${start} - ${end}`;
+  }
+
+  function bookingUserText(b) {
+    const name = maskName(b.name);
+    const tail = phoneTail(b.phone);
+    return tail ? `${name} (${tail})` : name;
+  }
+
+  function getConfirmedBookings() {
+    return allBookings.filter(b => b.status === "confirmed" && b.date);
+  }
+
+  function renderCalendar() {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    monthTitle.textContent = `${year}. ${String(month + 1).padStart(2, "0")}`;
+
+    const firstDay = new Date(year, month, 1);
+    const lastDate = new Date(year, month + 1, 0).getDate();
+    const startDay = firstDay.getDay();
+
+    const todayStr = getLocalDateString(new Date());
+    const confirmed = getConfirmedBookings();
+
+    counter.textContent = confirmed.length;
+
+    const bookingsByDate = {};
+    confirmed.forEach(b => {
+      if (!bookingsByDate[b.date]) bookingsByDate[b.date] = [];
+      bookingsByDate[b.date].push(b);
+    });
+
+    calendarGrid.innerHTML = "";
+
+    const dayNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+    dayNames.forEach(day => {
+      const el = document.createElement("div");
+      el.className = "day-name";
+      el.textContent = day;
+      calendarGrid.appendChild(el);
+    });
+
+    for (let i = 0; i < startDay; i++) {
+      const empty = document.createElement("div");
+      empty.className = "calendar-cell empty";
+      calendarGrid.appendChild(empty);
+    }
+
+    for (let day = 1; day <= lastDate; day++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      const dayBookings = bookingsByDate[dateStr] || [];
+
+      const cell = document.createElement("div");
+      cell.className = "calendar-cell";
+
+      if (dateStr === todayStr) cell.classList.add("today");
+      if (dayBookings.length > 0) cell.classList.add("booked");
+
+      cell.innerHTML = `
+        <div class="date-number">${day}</div>
+        <div class="booking-area">
+          ${
+            dayBookings.length
+              ? dayBookings.map(b => `
+                <div class="booking-chip">
+                  <div class="booking-time">${bookingTimeText(b)}</div>
+                  <div class="booking-user">${bookingUserText(b)}</div>
+                </div>
+              `).join("")
+              : `<div class="available">예약 가능</div>`
+          }
+        </div>
+      `;
+
+      calendarGrid.appendChild(cell);
+    }
+  }
+
+  document.getElementById("prevMonth").addEventListener("click", () => {
+    currentDate.setMonth(currentDate.getMonth() - 1);
+    renderCalendar();
+  });
+
+  document.getElementById("nextMonth").addEventListener("click", () => {
+    currentDate.setMonth(currentDate.getMonth() + 1);
+    renderCalendar();
+  });
+
+  renderCalendar();
+
+  onSnapshot(
+    collection(db, "bookings"),
+    snapshot => {
+      allBookings = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      loadingState.style.display = "none";
+      errorState.style.display = "none";
+      renderCalendar();
+    },
+    error => {
+      console.error("예약 현황 불러오기 실패:", error);
+      loadingState.style.display = "none";
+      errorState.style.display = "block";
+    }
+  );
+</script>
+
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --black:#0a0a0a;
+  --white:#fafaf8;
+  --gray:#888;
+  --light:#f4f2ee;
+  --border:#e0ddd8;
+  --accent:#c8841a;
+  --green:#9caf9b;
+}
+
+body {
+  font-family:'Barlow',sans-serif;
+  background:var(--white);
+  color:var(--black);
+  min-height:100vh;
+}
+
+nav {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:20px 48px;
+  border-bottom:0.5px solid var(--border);
+  background:rgba(250,250,248,0.97);
+  position:sticky;
+  top:0;
+  z-index:100;
+}
+
+.logo {
+  font-family:'Cormorant Garamond',serif;
+  font-size:15px;
+  letter-spacing:0.18em;
+  color:var(--black);
+  text-decoration:none;
+}
+
+.nav-links {
+  display:flex;
+  gap:36px;
+  list-style:none;
+}
+
+.nav-links a {
+  font-size:11px;
+  letter-spacing:0.12em;
+  color:var(--gray);
+  text-decoration:none;
+  text-transform:uppercase;
+}
+
+.nav-links a.active {
+  color:var(--black);
+  border-bottom:1px solid var(--black);
+  padding-bottom:2px;
+}
+
+.nav-cta {
+  font-size:11px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  border:0.5px solid var(--black);
+  padding:9px 20px;
+  color:var(--black);
+  text-decoration:none;
+}
+
+.page-hero {
+  height:220px;
+  background:linear-gradient(rgba(0,0,0,0.65),rgba(0,0,0,0.45)),
+    url('https://images.unsplash.com/photo-1497366216548-37526070297c?w=1400&q=80') center/cover;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  padding:36px 48px;
+}
+
+.hero-tag {
+  font-size:10px;
+  letter-spacing:0.22em;
+  color:rgba(255,255,255,0.5);
+  text-transform:uppercase;
+  margin-bottom:10px;
+}
+
+.hero-title {
+  font-family:'Cormorant Garamond',serif;
+  font-size:36px;
+  font-weight:300;
+  color:#fff;
+  letter-spacing:0.12em;
+}
+
+.main-wrap {
+  max-width:1100px;
+  margin:0 auto;
+  padding:56px 48px 72px;
+}
+
+.schedule-top {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  margin-bottom:28px;
+}
+
+.label {
+  font-size:10px;
+  letter-spacing:0.2em;
+  color:var(--gray);
+  text-transform:uppercase;
+  margin-bottom:8px;
+}
+
+.schedule-top h1 {
+  font-family:'Cormorant Garamond',serif;
+  font-size:30px;
+  font-weight:400;
+  letter-spacing:0.06em;
+}
+
+.counter-wrap {
+  text-align:right;
+}
+
+.counter-num {
+  font-family:'Cormorant Garamond',serif;
+  font-size:42px;
+  line-height:1;
+}
+
+.counter-label {
+  font-size:10px;
+  letter-spacing:0.14em;
+  color:var(--gray);
+  text-transform:uppercase;
+  margin-top:4px;
+}
+
+
+.schedule-cta {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:32px;
+  margin-bottom:32px;
+  padding:28px 34px;
+  background:var(--black);
+  color:#fff;
+}
+
+.schedule-cta-copy h2 {
+  font-family:'Cormorant Garamond',serif;
+  font-size:38px;
+  font-weight:300;
+  line-height:1.15;
+  margin-bottom:8px;
+}
+
+.schedule-cta-copy p {
+  font-size:13px;
+  line-height:1.8;
+  color:rgba(255,255,255,.72);
+}
+
+.schedule-cta-button {
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:190px;
+  padding:17px 28px;
+  border:1px solid #fff;
+  color:#fff;
+  text-decoration:none;
+  font-size:11px;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  transition:background .25s ease,color .25s ease;
+}
+
+.schedule-cta-button:hover {
+  background:#fff;
+  color:var(--black);
+}
+
+.notice-bar {
+  background:#f7f6f2;
+  border:0.5px solid #e8e4dc;
+  padding:14px 18px;
+  margin-bottom:32px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:12px;
+  color:#666;
+}
+
+.notice-dot {
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--accent);
+}
+
+.live-info {
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:10px;
+  color:#aaa;
+  letter-spacing:0.08em;
+}
+
+.live-dot {
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:#4caf50;
+  animation:pulse 2s ease infinite;
+}
+
+@keyframes pulse {
+  0%,100% { opacity:1; }
+  50% { opacity:.3; }
+}
+
+.calendar-box {
+  border:0.5px solid var(--border);
+  background:#fff;
+}
+
+.calendar-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:24px;
+  border-bottom:0.5px solid var(--border);
+}
+
+.month-title {
+  font-family:'Cormorant Garamond',serif;
+  font-size:30px;
+  font-weight:400;
+  letter-spacing:0.08em;
+}
+
+.month-btn {
+  width:42px;
+  height:42px;
+  border:0.5px solid var(--border);
+  background:#fff;
+  cursor:pointer;
+  font-size:18px;
+}
+
+.month-btn:hover {
+  background:var(--black);
+  color:#fff;
+}
+
+.calendar-grid {
+  display:grid;
+  grid-template-columns:repeat(7, 1fr);
+}
+
+.day-name {
+  padding:14px 8px;
+  text-align:center;
+  font-size:10px;
+  letter-spacing:0.12em;
+  color:#aaa;
+  border-bottom:0.5px solid var(--border);
+}
+
+.day-name:first-child { color:#c9826c; }
+.day-name:nth-child(7) { color:#6f8fb8; }
+
+.calendar-cell {
+  min-height:125px;
+  padding:12px;
+  border-right:0.5px solid var(--border);
+  border-bottom:0.5px solid var(--border);
+  position:relative;
+  background:#fff;
+}
+
+.calendar-cell:nth-child(7n) {
+  border-right:none;
+}
+
+.calendar-cell.empty {
+  background:#faf9f6;
+}
+
+.date-number {
+  font-family:'Cormorant Garamond',serif;
+  font-size:22px;
+  color:#222;
+  margin-bottom:10px;
+}
+
+.calendar-cell.today .date-number {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  background:var(--black);
+  color:#fff;
+}
+
+.calendar-cell.booked {
+  background:#fbf8f2;
+}
+
+.booking-chip {
+  display:block;
+  font-size:11px;
+  letter-spacing:0.04em;
+  padding:7px 8px;
+  margin-bottom:5px;
+  background:var(--black);
+  color:#fff;
+}
+
+.booking-time {
+  font-size:11px;
+  line-height:1.25;
+  white-space:nowrap;
+}
+
+.booking-user {
+  margin-top:4px;
+  font-size:10px;
+  line-height:1.25;
+  color:rgba(255,255,255,0.72);
+  letter-spacing:0.03em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.available {
+  font-size:10px;
+  color:var(--green);
+  letter-spacing:0.08em;
+}
+
+#loadingState {
+  padding:18px 0 0;
+  font-size:11px;
+  letter-spacing:0.12em;
+  color:#aaa;
+  text-transform:uppercase;
+}
+
+#errorState {
+  display:none;
+  margin-top:18px;
+  padding:16px;
+  border:0.5px solid #d8a5a5;
+  color:#9b4d4d;
+  font-size:12px;
+  background:#fff7f7;
+}
+
+.guide-box {
+  margin-top:24px;
+  padding:18px;
+  border:0.5px solid var(--border);
+  font-size:12px;
+  color:#666;
+  line-height:1.8;
+  background:#fff;
+}
+
+footer {
+  padding:28px 48px;
+  border-top:0.5px solid var(--border);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.footer-logo {
+  font-family:'Cormorant Garamond',serif;
+  font-size:13px;
+  letter-spacing:0.16em;
+}
+
+.footer-links {
+  display:flex;
+  gap:28px;
+}
+
+.footer-links a {
+  font-size:10px;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--gray);
+  text-decoration:none;
+}
+
+.footer-copy {
+  font-size:10px;
+  color:#ccc;
+}
+
+@media (max-width:768px) {
+  nav {
+    padding:18px 20px;
+    flex-wrap:wrap;
+    gap:16px;
+  }
+
+  .nav-links {
+    order:3;
+    width:100%;
     justify-content:space-between;
-    align-items:center;
-    gap:32px;
-    margin-bottom:32px;
-    padding:28px 34px;
-    background:#111;
-    color:#fff;
-}
+    gap:0;
+  }
 
-.schedule-cta h2{
-    font-family:'Cormorant Garamond',serif;
-    font-size:38px;
-    font-weight:300;
-    margin-bottom:8px;
-}
+  .nav-cta {
+    padding:8px 14px;
+  }
 
-.schedule-cta p{
-    font-size:13px;
-    line-height:1.8;
-    color:rgba(255,255,255,.75);
-}
+  .page-hero {
+    height:180px;
+    padding:28px 22px;
+  }
 
-.schedule-cta a{
-    flex-shrink:0;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    padding:18px 34px;
-    border:1px solid #fff;
-    color:#fff;
-    text-decoration:none;
-    letter-spacing:.18em;
-    text-transform:uppercase;
-    transition:.25s;
-}
+  .hero-title {
+    font-size:32px;
+  }
 
-.schedule-cta a:hover{
-    background:#fff;
-    color:#111;
-}
+  .main-wrap {
+    padding:42px 18px 56px;
+  }
 
-@media(max-width:768px){
+  .schedule-top {
+    align-items:flex-start;
+  }
 
-.schedule-cta{
-display:block;
-padding:26px;
-}
+  .calendar-header {
+    padding:18px;
+  }
 
-.schedule-cta a{
-margin-top:24px;
-width:100%;
-}
+  .month-title {
+    font-size:26px;
+  }
 
-.schedule-cta h2{
-font-size:32px;
-}
+  .calendar-cell {
+    min-height:92px;
+    padding:8px;
+  }
 
+  .date-number {
+    font-size:18px;
+  }
+
+  .booking-chip {
+    font-size:9px;
+    padding:4px;
+  }
+
+  .available {
+    display:none;
+  }
+
+
+  .schedule-cta {
+    display:block;
+    padding:24px 22px;
+    margin-bottom:24px;
+  }
+
+  .schedule-cta-copy h2 {
+    font-size:30px;
+  }
+
+  .schedule-cta-button {
+    width:100%;
+    min-width:0;
+    margin-top:20px;
+  }
+
+  footer {
+    padding:24px 20px;
+    flex-direction:column;
+    gap:18px;
+  }
 }
+</style>
+
+</head>
+
+<body>
+
+<nav>
+  <a href="index.html" class="logo">RAWSCENE STUDIO</a>
+  <ul class="nav-links">
+    <li><a href="index.html">Studio</a></li>
+    <li><a href="#">Info</a></li>
+    <li><a href="#">Archive</a></li>
+    <li><a href="schedule.html" class="active">Schedule</a></li>
+  </ul>
+  <a href="reservation.html" class="nav-cta">Reservation</a>
+</nav>
+
+<div class="page-hero">
+  <p class="hero-tag">Rawscene Studio · Namyangju</p>
+  <h1 class="hero-title">SCHEDULE</h1>
+</div>
+
+<div class="main-wrap">
+
+  <div class="schedule-top">
+    <div>
+      <p class="label">Monthly Calendar</p>
+      <h1>예약 현황</h1>
+    </div>
+    <div class="counter-wrap">
+      <div class="counter-num" id="counter">—</div>
+      <div class="counter-label">확정 예약</div>
+    </div>
+  </div>
+
+
+  <section class="schedule-cta" aria-label="예약 페이지 이동">
+    <div class="schedule-cta-copy">
+      <h2>예약 가능한 날짜를 확인하셨나요?</h2>
+      <p>원하는 날짜가 비어 있다면 예약 페이지에서 신청을 진행해주세요.</p>
+    </div>
+    <a class="schedule-cta-button" href="reservation.html">예약하러 가기</a>
+  </section>
+
+  <div class="notice-bar">
+    <div class="notice-dot"></div>
+    확정된 예약만 표시됩니다. 예약자는 이름 일부와 연락처 뒷자리로 확인할 수 있습니다.
+    <div class="live-info">
+      <div class="live-dot"></div>
+      실시간 업데이트
+    </div>
+  </div>
+
+  <div class="calendar-box">
+    <div class="calendar-header">
+      <button class="month-btn" id="prevMonth" type="button">←</button>
+      <div class="month-title" id="monthTitle">----</div>
+      <button class="month-btn" id="nextMonth" type="button">→</button>
+    </div>
+
+<div class="calendar-grid" id="calendarGrid"></div>
+
+  </div>
+
+  <div id="loadingState">불러오는 중...</div>
+  <div id="errorState">예약 현황을 불러오지 못했습니다. 잠시 후 다시 확인해주세요.</div>
+
+  <div class="guide-box">
+    * 예약 가능 날짜는 “예약 가능”으로 표시됩니다.<br>
+    * 확정 예약이 있는 날짜에는 예약 시간과 예약자 확인 정보가 표시됩니다.<br>
+    * 월이 바뀌면 해당 월의 날짜가 자동으로 다시 표시됩니다.
+  </div>
+
+</div>
+
+<footer>
+  <p class="footer-logo">RAWSCENE STUDIO</p>
+  <div class="footer-links">
+    <a href="https://instagram.com" target="_blank">Instagram</a>
+    <a href="reservation.html">Reservation</a>
+  </div>
+  <p class="footer-copy">© 2026 Rawscene Studio. All rights reserved.</p>
+</footer>
+
+</body>
+</html>
