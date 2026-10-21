@@ -58,3 +58,41 @@ document.addEventListener('DOMContentLoaded', () => {
     update();
   }
 });
+
+/* Mobile administrator entry, shared across all public pages. */
+(() => {
+  const mountMobileAdmin = () => {
+    const header = document.querySelector('.site-header');
+    if (!header || header.querySelector('.rs-mobile-admin')) return;
+    const style = document.createElement('style');
+    style.textContent = `
+      body .site-header .rs-mobile-admin { display:none; }
+      @media (max-width:760px) {
+        body .site-header { position:relative!important; overflow:visible!important; }
+        body .site-header .rs-admin-entry { display:none!important; }
+        body .site-header .rs-mobile-admin {
+          display:inline-flex!important; align-items:center; justify-content:center;
+          gap:6px; position:absolute!important; right:88px; top:22px;
+          min-height:44px; padding:0 9px; margin:0!important;
+          visibility:visible!important; opacity:1!important;
+          color:#454d3f!important; background:#fff; border:1px solid #e1e5dc;
+          font-size:11px!important; line-height:1.4; text-decoration:none;
+          white-space:nowrap; z-index:102; border-radius:3px;
+        }
+        body .site-header .rs-mobile-admin svg { width:15px; height:15px; flex:none; }
+        body .site-header .site-menu { margin-left:auto!important; }
+        body .site-header .rs-mobile-admin:focus-visible {outline:2px solid #77826b;outline-offset:3px;}
+      }
+    `;
+    document.head.append(style);
+    const link = document.createElement('a');
+    link.className = 'rs-mobile-admin';
+    link.href = 'admin.html';
+    link.setAttribute('aria-label','관리자 페이지 — 예약 확정 및 취소');
+    link.title = '예약 관리';
+    link.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1"/><path d="M12 16v2"/></svg><span>관리자</span>';
+    header.append(link);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded',mountMobileAdmin);
+  else mountMobileAdmin();
+})();
