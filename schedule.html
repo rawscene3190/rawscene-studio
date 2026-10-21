@@ -4,9 +4,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Schedule — RAWSCENE STUDIO</title>
+<title>스케줄 | 로우씬 스튜디오 RAWSCENE</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -683,32 +683,20 @@ footer {
 }
 </style>
 
-</head>
+<meta name="description" content="로우씬 스튜디오의 확정 예약 현황과 촬영 일정을 확인하세요."><meta property="og:title" content="스케줄 | 로우씬 스튜디오 RAWSCENE"><meta property="og:description" content="로우씬 스튜디오의 확정 예약 현황과 촬영 일정을 확인하세요."><link rel="canonical" href="https://www.rawscene.kr/schedule.html"><link rel="stylesheet" href="rawscene-site.css?v=20261021-3"></head>
 
-<body>
+<body class="rs-schedule" id="top">
 
-<nav>
-  <a href="index.html" class="logo">RAWSCENE STUDIO</a>
-  <ul class="nav-links">
-    <li><a href="index.html">Studio</a></li>
-    <li><a href="#">Info</a></li>
-    <li><a href="#">Archive</a></li>
-    <li><a href="schedule.html" class="active">Schedule</a></li>
-  </ul>
-  <a href="reservation.html" class="nav-cta">Reservation</a>
-</nav>
+<header class="site-header"><a class="site-logo" href="index.html" aria-label="로우씬 스튜디오 홈">rawscene<span>STUDIO &amp; SPACE</span></a><div class="site-nav" id="site-nav" role="navigation" aria-label="주요 메뉴"><a href="studio.html">Space</a><a href="archive.html">Archive</a><a href="info.html">Information</a><a href="schedule.html" aria-current="page">Schedule</a><a href="reservation.html" class="booking">Reservation <i>↗</i></a></div><button type="button" class="site-menu" aria-controls="site-nav" aria-expanded="false">Menu</button></header>
 
-<div class="page-hero">
-  <p class="hero-tag">Rawscene Studio · Namyangju</p>
-  <h1 class="hero-title">SCHEDULE</h1>
-</div>
+<section class="page-heading"><span class="eyebrow">SCHEDULE</span><h1>Find your date.</h1><p>촬영을 위한 일정을 확인해주세요.<br>확정된 예약 현황이 표시됩니다.</p></section>
 
 <div class="main-wrap">
 
   <div class="schedule-top">
     <div>
       <p class="label">Monthly Calendar</p>
-      <h1>예약 현황</h1>
+      <h2>예약 현황</h2>
     </div>
     <div class="counter-wrap">
       <div class="counter-num" id="counter">—</div>
@@ -736,34 +724,27 @@ footer {
 
   <div class="calendar-box">
     <div class="calendar-header">
-      <button class="month-btn" id="prevMonth" type="button">←</button>
+      <button aria-label="이전 달" class="month-btn" id="prevMonth" type="button">←</button>
       <div class="month-title" id="monthTitle">----</div>
-      <button class="month-btn" id="nextMonth" type="button">→</button>
+      <button aria-label="다음 달" class="month-btn" id="nextMonth" type="button">→</button>
     </div>
 
 <div class="calendar-grid" id="calendarGrid"></div>
 
   </div>
 
-  <div id="loadingState">불러오는 중...</div>
+  <section class="schedule-details" aria-label="선택 날짜 예약 현황" aria-live="polite"></section><div id="loadingState">불러오는 중...</div>
   <div id="errorState">예약 현황을 불러오지 못했습니다. 잠시 후 다시 확인해주세요.</div>
 
   <div class="guide-box">
-    * 예약 가능 날짜는 “예약 가능”으로 표시됩니다.<br>
+    * PC에서는 날짜별 예약 시간을 확인할 수 있습니다. 모바일에서는 날짜를 누르면 아래에 상세 내용이 표시됩니다.<br>
     * 확정 예약이 있는 날짜에는 예약 시간과 예약자 확인 정보가 표시됩니다.<br>
     * 월이 바뀌면 해당 월의 날짜가 자동으로 다시 표시됩니다.
   </div>
 
 </div>
 
-<footer>
-  <p class="footer-logo">RAWSCENE STUDIO</p>
-  <div class="footer-links">
-    <a href="https://instagram.com" target="_blank">Instagram</a>
-    <a href="reservation.html">Reservation</a>
-  </div>
-  <p class="footer-copy">© 2026 Rawscene Studio. All rights reserved.</p>
-</footer>
 
-</body>
+
+<footer class="site-footer"><div><span class="footer-mark">rawscene</span><p>로우씬 스튜디오 · 남양주 다산<br>© 2026 Rawscene studio.</p></div><p><a href="mailto:rawscene3190@gmail.com">rawscene3190@gmail.com</a><br><a href="tel:01057883190">010–5788–3190</a></p><div class="footer-links"><a href="reservation.html">Reservation ↗</a><a href="#top">Back to top ↑</a></div></footer><div class="mobile-book"><span>Rawscene studio, Namyangju.</span><a href="reservation.html">예약하기<i>↗</i></a></div><script src="rawscene-site.js?v=20261021-3" defer></script></body>
 </html>

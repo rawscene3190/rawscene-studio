@@ -4,8 +4,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reservation — RAWSCENE STUDIO</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<title>예약 | 로우씬 스튜디오 RAWSCENE</title>
+
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -759,20 +759,13 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:18px 4
 }
 
 </style>
-</head>
-<body>
+<meta name="description" content="로우씬 스튜디오 온라인 예약. 날짜와 시간을 선택하고 촬영 예약을 신청하세요."><meta property="og:title" content="예약 | 로우씬 스튜디오 RAWSCENE"><meta property="og:description" content="로우씬 스튜디오 온라인 예약. 날짜와 시간을 선택하고 촬영 예약을 신청하세요."><link rel="canonical" href="https://www.rawscene.kr/reservation.html"><link rel="stylesheet" href="rawscene-site.css?v=20261021-3"></head>
+<body class="rs-reservation" id="top">
 
 <div class="lock" id="lock"><div class="lock-sp"></div>처리 중...</div>
 <div class="toast" id="toast"></div>
 
-<nav>
-  <a href="index.html" class="logo">RAWSCENE STUDIO</a>
-  <ul class="nav-links">
-    <li><a href="index.html">Studio</a></li>
-    <li><a href="reservation.html" class="active">Reservation</a></li>
-    <li><a href="admin.html">Admin</a></li>
-  </ul>
-</nav>
+<header class="site-header"><a class="site-logo" href="index.html" aria-label="로우씬 스튜디오 홈">rawscene<span>STUDIO &amp; SPACE</span></a><div class="site-nav" id="site-nav" role="navigation" aria-label="주요 메뉴"><a href="studio.html">Space</a><a href="archive.html">Archive</a><a href="info.html">Information</a><a href="schedule.html">Schedule</a><a href="reservation.html" aria-current="page" class="booking">Reservation <i>↗</i></a></div><button type="button" class="site-menu" aria-controls="site-nav" aria-expanded="false">Menu</button></header>
 
 <!-- ══ 예약 페이지 ══ -->
 <div class="page active" id="page-res">
@@ -780,10 +773,7 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:18px 4
     <div class="notice-item"><div class="ndot"></div>예약 신청 직후에는 <strong style="color:var(--black);margin:0 3px">대기 상태</strong>로 접수됩니다.</div>
     <div class="notice-item"><div class="ndot b"></div>입금 순서로 결정되며 입금 확인 시 예약이 확정됩니다.</div>
   </div>
-  <div class="page-hero">
-    <p>Rawscene Studio · Namyangju</p>
-    <h1><strong>STUDIO</strong> RESERVATION</h1>
-  </div>
+  <section class="page-heading"><span class="eyebrow">RESERVATION</span><h1>Your next scene.</h1><p>원하는 날짜와 시간을 선택해주세요.<br>예약 신청은 대기 상태로 접수되며 입금 확인 후 확정됩니다.</p></section>
   <div class="main">
     <div class="cal-panel">
       <p class="panel-label">Step 1</p>
@@ -817,13 +807,13 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:18px 4
         <p>3인 기준 · 4인부터 1인 초과 시 시간당 5,000원 추가</p>
       </div>
       <div class="sel-info empty" id="selInfo">날짜와 시간을 먼저 선택해 주세요.</div>
-      <div class="fg"><label class="fl">이름 / 업체명 *</label><input class="fi" id="fName" type="text" placeholder="홍길동 / OO스튜디오"></div>
+      <div class="fg"><label class="fl" for="fName">이름 / 업체명 *</label><input class="fi" id="fName" type="text" placeholder="홍길동 / OO스튜디오"></div>
       <div class="frow">
-        <div class="fg"><label class="fl">연락처 *</label><input class="fi" id="fPhone" type="tel" placeholder="010-0000-0000"></div>
-        <div class="fg"><label class="fl">이메일</label><input class="fi" id="fEmail" type="email" placeholder="email@example.com"></div>
+        <div class="fg"><label class="fl" for="fPhone">연락처 *</label><input class="fi" id="fPhone" type="tel" placeholder="010-0000-0000"></div>
+        <div class="fg"><label class="fl" for="fEmail">이메일</label><input class="fi" id="fEmail" type="email" placeholder="email@example.com"></div>
       </div>
       <div class="fg">
-        <label class="fl">촬영 유형 *</label>
+        <label class="fl" for="fType">촬영 유형 *</label>
         <select class="fs" id="fType">
           <option value="">선택해주세요</option>
           <option>룩북 / 패션</option><option>제품 촬영</option>
@@ -832,7 +822,7 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:18px 4
         </select>
       </div>
       <div class="fg">
-        <label class="fl">인원 수</label>
+        <label class="fl" for="fPeople">인원 수</label>
         <select class="fs" id="fPeople">
           <option>1명</option>
           <option>2명</option>
@@ -846,7 +836,7 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:18px 4
           <option>10명 이상</option>
         </select>
       </div>
-      <div class="fg"><label class="fl">요청 사항</label><textarea class="ft" id="fNote" placeholder="특별한 요청이나 궁금한 점을 적어주세요."></textarea></div>
+      <div class="fg"><label class="fl" for="fNote">요청 사항</label><textarea class="ft" id="fNote" placeholder="특별한 요청이나 궁금한 점을 적어주세요."></textarea></div>
       <!-- 개인정보 수집 동의 -->
       <div class="agree-box">
         <div class="agree-title">개인정보 수집 및 이용 동의</div>
@@ -916,5 +906,5 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:18px 4
 </div>
 
 
-</body>
+<footer class="site-footer"><div><span class="footer-mark">rawscene</span><p>로우씬 스튜디오 · 남양주 다산<br>© 2026 Rawscene studio.</p></div><p><a href="mailto:rawscene3190@gmail.com">rawscene3190@gmail.com</a><br><a href="tel:01057883190">010–5788–3190</a></p><div class="footer-links"><a href="reservation.html">Reservation ↗</a><a href="#top">Back to top ↑</a></div></footer><script src="rawscene-site.js?v=20261021-3" defer></script></body>
 </html>
